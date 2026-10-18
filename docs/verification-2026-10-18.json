@@ -1,0 +1,534 @@
+{
+  "cases": [
+    {
+      "python": "3.12",
+      "django": "5.2.18",
+      "database": "sqlite",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.12.1",
+      "versions": {
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "sqlite",
+        "server_version": "3.43.1",
+        "python": "3.12.1",
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 8.16,
+      "base_install": {
+        "status": "passed",
+        "python": "3.12.1",
+        "package_version": "0.0.0",
+        "package_file": "/Users/tatsuya/Documents/ChatGPT/SystemDesignInterviewCat/packages/django-ninja-ulid/local-checks/matrix/base-environments/py3.12-django5.2.18/lib/python3.12/site-packages/django_ninja_ulid/__init__.py",
+        "optional_field_installed": false,
+        "root_import_did_not_import_django_or_ninja": true,
+        "validation_and_serialization": "passed",
+        "missing_extra_hint": "passed"
+      }
+    },
+    {
+      "python": "3.12",
+      "django": "5.2.18",
+      "database": "postgresql",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.12.1",
+      "versions": {
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "postgresql",
+        "server_version": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+        "python": "3.12.1",
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 8.4
+    },
+    {
+      "python": "3.12",
+      "django": "6.1.2",
+      "database": "sqlite",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.12.1",
+      "versions": {
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "sqlite",
+        "server_version": "3.43.1",
+        "python": "3.12.1",
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.15,
+      "base_install": {
+        "status": "passed",
+        "python": "3.12.1",
+        "package_version": "0.0.0",
+        "package_file": "/Users/tatsuya/Documents/ChatGPT/SystemDesignInterviewCat/packages/django-ninja-ulid/local-checks/matrix/base-environments/py3.12-django6.1.2/lib/python3.12/site-packages/django_ninja_ulid/__init__.py",
+        "optional_field_installed": false,
+        "root_import_did_not_import_django_or_ninja": true,
+        "validation_and_serialization": "passed",
+        "missing_extra_hint": "passed"
+      }
+    },
+    {
+      "python": "3.12",
+      "django": "6.1.2",
+      "database": "postgresql",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.12.1",
+      "versions": {
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "postgresql",
+        "server_version": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+        "python": "3.12.1",
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.78
+    },
+    {
+      "python": "3.13",
+      "django": "5.2.18",
+      "database": "sqlite",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.13.0",
+      "versions": {
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "sqlite",
+        "server_version": "3.45.3",
+        "python": "3.13.0",
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.3,
+      "base_install": {
+        "status": "passed",
+        "python": "3.13.0",
+        "package_version": "0.0.0",
+        "package_file": "/Users/tatsuya/Documents/ChatGPT/SystemDesignInterviewCat/packages/django-ninja-ulid/local-checks/matrix/base-environments/py3.13-django5.2.18/lib/python3.13/site-packages/django_ninja_ulid/__init__.py",
+        "optional_field_installed": false,
+        "root_import_did_not_import_django_or_ninja": true,
+        "validation_and_serialization": "passed",
+        "missing_extra_hint": "passed"
+      }
+    },
+    {
+      "python": "3.13",
+      "django": "5.2.18",
+      "database": "postgresql",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.13.0",
+      "versions": {
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "postgresql",
+        "server_version": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+        "python": "3.13.0",
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.38
+    },
+    {
+      "python": "3.13",
+      "django": "6.1.2",
+      "database": "sqlite",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.13.0",
+      "versions": {
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "sqlite",
+        "server_version": "3.45.3",
+        "python": "3.13.0",
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.02,
+      "base_install": {
+        "status": "passed",
+        "python": "3.13.0",
+        "package_version": "0.0.0",
+        "package_file": "/Users/tatsuya/Documents/ChatGPT/SystemDesignInterviewCat/packages/django-ninja-ulid/local-checks/matrix/base-environments/py3.13-django6.1.2/lib/python3.13/site-packages/django_ninja_ulid/__init__.py",
+        "optional_field_installed": false,
+        "root_import_did_not_import_django_or_ninja": true,
+        "validation_and_serialization": "passed",
+        "missing_extra_hint": "passed"
+      }
+    },
+    {
+      "python": "3.13",
+      "django": "6.1.2",
+      "database": "postgresql",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.13.0",
+      "versions": {
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "postgresql",
+        "server_version": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+        "python": "3.13.0",
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.71
+    },
+    {
+      "python": "3.14",
+      "django": "5.2.18",
+      "database": "sqlite",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.14.5",
+      "versions": {
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "sqlite",
+        "server_version": "3.50.4",
+        "python": "3.14.5",
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.96,
+      "base_install": {
+        "status": "passed",
+        "python": "3.14.5",
+        "package_version": "0.0.0",
+        "package_file": "/Users/tatsuya/Documents/ChatGPT/SystemDesignInterviewCat/packages/django-ninja-ulid/local-checks/matrix/base-environments/py3.14-django5.2.18/lib/python3.14/site-packages/django_ninja_ulid/__init__.py",
+        "optional_field_installed": false,
+        "root_import_did_not_import_django_or_ninja": true,
+        "validation_and_serialization": "passed",
+        "missing_extra_hint": "passed"
+      }
+    },
+    {
+      "python": "3.14",
+      "django": "5.2.18",
+      "database": "postgresql",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.14.5",
+      "versions": {
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "postgresql",
+        "server_version": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+        "python": "3.14.5",
+        "Django": "5.2.18",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.52
+    },
+    {
+      "python": "3.14",
+      "django": "6.1.2",
+      "database": "sqlite",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.14.5",
+      "versions": {
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "sqlite",
+        "server_version": "3.50.4",
+        "python": "3.14.5",
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.68,
+      "base_install": {
+        "status": "passed",
+        "python": "3.14.5",
+        "package_version": "0.0.0",
+        "package_file": "/Users/tatsuya/Documents/ChatGPT/SystemDesignInterviewCat/packages/django-ninja-ulid/local-checks/matrix/base-environments/py3.14-django6.1.2/lib/python3.14/site-packages/django_ninja_ulid/__init__.py",
+        "optional_field_installed": false,
+        "root_import_did_not_import_django_or_ninja": true,
+        "validation_and_serialization": "passed",
+        "missing_extra_hint": "passed"
+      }
+    },
+    {
+      "python": "3.14",
+      "django": "6.1.2",
+      "database": "postgresql",
+      "postgres_image": "postgres:18.6-trixie",
+      "status": "passed",
+      "python_full": "3.14.5",
+      "versions": {
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "pydantic": "2.13.5",
+        "python-ulid": "4.0.1",
+        "python-ulid-django": "1.6.0",
+        "psycopg": "3.3.6"
+      },
+      "tests": 82,
+      "fresh_project": {
+        "status": "passed",
+        "database": "postgresql",
+        "server_version": "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+        "python": "3.14.5",
+        "Django": "6.1.2",
+        "django-ninja": "1.7.1",
+        "checks": [
+          "migrations",
+          "ULID PK/FK/M2M round trip",
+          "UUID",
+          "create/read",
+          "null/empty relations",
+          "invalid input 422",
+          "OpenAPI",
+          "separate alias schemas"
+        ]
+      },
+      "elapsed_seconds": 5.56
+    }
+  ],
+  "verified_on": "2026-10-18",
+  "host": {
+    "platform": "Darwin",
+    "architecture": "arm64"
+  },
+  "tested_wheel": {
+    "name": "django_ninja_ulid-0.0.0-py3-none-any.whl",
+    "sha256": "6434c702b773da5293a14418e95e2efb77e8a58ab568c5f03d33c2232c4fc2d1",
+    "metadata_stage": "before support-range and documentation update"
+  },
+  "runtime_sources": {
+    "src/django_ninja_ulid/__init__.py": "46d9ac1ebee5caa17628a9261c2a96be6c109ed9576a0af6174343c8d96e59aa",
+    "src/django_ninja_ulid/_types.py": "6aac5585918d77961141ecc2a4f3e7496a5eff9f718f1097cda718f6e6f18389",
+    "src/django_ninja_ulid/orm.py": "17054cabf0a8c27a599281feef799563422b8627c3a9e1cc9bd381a1e998d32e"
+  },
+  "postgres_image_digest": "sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336",
+  "actions": [
+    {
+      "repository": "actions/checkout",
+      "tag": "v7.0.1",
+      "commit": "3d3c42e5aac5ba805825da76410c181273ba90b1"
+    },
+    {
+      "repository": "actions/setup-python",
+      "tag": "v7.0.0",
+      "commit": "5fda3b95a4ea91299a34e894583c3862153e4b97"
+    },
+    {
+      "repository": "astral-sh/setup-uv",
+      "tag": "v9.0.0",
+      "commit": "c771a70e6277c0a99b617c7a806ffedaca235ff9"
+    },
+    {
+      "repository": "actions/upload-artifact",
+      "tag": "v7.0.2",
+      "commit": "cf430e030ddbb5b0abf93d22962f4752f3646cd9"
+    }
+  ]
+}

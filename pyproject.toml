@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "django-ninja-ulid"
+# Local build version; the first public release version is not decided yet.
+version = "0.0.0"
+description = "ULID validation and flat model response schemas for Django Ninja."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+# Python series covered by ci-matrix.json.
+requires-python = ">=3.12,<3.15"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Framework :: Django",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+dependencies = [
+  "Django>=5.2.18,<6.2,!=6.0.*,!=6.1.0,!=6.1.1",
+  "django-ninja==1.7.1",
+  "pydantic==2.13.5",
+  "python-ulid[pydantic]==4.0.1",
+]
+
+[project.optional-dependencies]
+orm = ["python-ulid-django==1.6.0"]
+
+[project.urls]
+Source = "https://github.com/nibuno/django-ninja-ulid"
+Issues = "https://github.com/nibuno/django-ninja-ulid/issues"
+Changelog = "https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+  "pytest==9.1.1",
+  "pytest-django==4.14.0",
+  "psycopg[binary]>=3.2,<4",
+  "build",
+  "twine",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/django_ninja_ulid"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src",
+  "/tests",
+  "/scripts",
+  "/docs",
+  "/ci-matrix.json",
+  "/pyproject.toml",
+  "/uv.lock",
+  "/README.md",
+  "/CHANGELOG.md",
+  "/LICENSE",
+]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "poc.settings"
+pythonpath = ["tests"]
+testpaths = ["tests"]
+addopts = "-ra"
