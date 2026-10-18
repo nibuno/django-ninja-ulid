@@ -1,7 +1,7 @@
 # django-ninja-ulid
 
 [![CI](https://github.com/nibuno/django-ninja-ulid/actions/workflows/ci.yml/badge.svg)](https://github.com/nibuno/django-ninja-ulid/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nibuno/django-ninja-ulid/blob/main/LICENSE)
 
 [Django Ninja](https://django-ninja.dev/)のAPIで、[ULID](https://github.com/ulid/spec)を26文字の文字列として入出力するためのライブラリです。
 
@@ -173,18 +173,18 @@ class ItemOut(ModelSchema):
 - python-ulid 4.0.1
 - python-ulid-django 1.6.0（`orm` extra）
 
-詳しい検証内容は[docs/compatibility.md](docs/compatibility.md)にまとめています。
+詳しい検証内容は[docs/compatibility.md](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)にまとめています。
 
 ## バージョンの方針
 
 公開APIは、`ApiULID`、`create_ulid_response_schema`、`related_ids`の3つです。
 
-0.x系の間は、互換性のない変更をマイナーバージョン（例：0.1 → 0.2）で、互換性を保つ修正をパッチバージョン（例：0.1.0 → 0.1.1）で出します。変更内容と移行方法は[CHANGELOG](CHANGELOG.md)に記録します。詳しくは[docs/versioning.md](docs/versioning.md)を見てください。
+0.x系の間は、互換性のない変更をマイナーバージョン（例：0.1 → 0.2）で、互換性を保つ修正をパッチバージョン（例：0.1.0 → 0.1.1）で出します。変更内容と移行方法は[CHANGELOG](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)に記録します。詳しくは[docs/versioning.md](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/versioning.md)を見てください。
 
 ## 開発に参加する
 
-不具合の報告や開発の手順は、[CONTRIBUTING.md](CONTRIBUTING.md)にまとめています。
+不具合の報告や開発の手順は、[CONTRIBUTING.md](https://github.com/nibuno/django-ninja-ulid/blob/main/CONTRIBUTING.md)にまとめています。
 
 ## ライセンス
 
-[MIT License](LICENSE)
+[MIT License](https://github.com/nibuno/django-ninja-ulid/blob/main/LICENSE)
