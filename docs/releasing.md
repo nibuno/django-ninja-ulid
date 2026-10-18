@@ -51,7 +51,7 @@ Actionsの成果物は`release-<version>-<commit>`の名前で30日間保存し�
 
 テンプレートの両送信jobを有効にする前に、`pypi` environmentの承認を実際に要求できることを確認する。environment名を書くだけでは承認を必須にできない。現在はenvironmentの作成・設定を行っていない。[GitHubのenvironment設定](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
 
-GitHub Free・Pro・Teamでは、必須レビュアーはpublicリポジトリに限られる。そのため、現在のprivateの状態で同じ承認設定を利用できるとは扱わず、public化の時期と利用条件を本人が確認してから公開処理を有効にする。承認者が本人だけの場合は、自身が起動したrunを承認できる設定にする。[利用条件と自己承認の設定](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
+GitHub Free・Pro・Teamでは、必須レビュアーはpublicリポジトリに限られる。リポジトリは2026-10-19にpublicへ変更したため、`pypi` environmentに承認設定を行ってから公開処理を有効にする。承認者が本人だけの場合は、自身が起動したrunを承認できる設定にする。[利用条件と自己承認の設定](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
 
 ローカルの構文検査にはactionlint 1.7.12を使った。テンプレートの意図した`if: false`だけを除外するため、次のように検査を分ける。
 

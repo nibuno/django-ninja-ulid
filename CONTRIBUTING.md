@@ -9,11 +9,20 @@ uv sync --locked --extra orm
 uv run --locked --extra orm pytest -q
 ```
 
+配布物を作って検査する場合は、次を実行します。
+
+```bash
+uv build
+uv run --locked --extra orm twine check dist/*
+```
+
+`tests/poc`には、このライブラリを作る前のPoCのAPIを、テスト用に残しています。`tests/poc/adapter.py`はインストールした`django_ninja_ulid`を読み込むので、元のPoCの実装には依存しません。wheelに含まれるのは`src/django_ninja_ulid`だけです。
+
 Python・Django・DBの全組み合わせを確認する手順は[対応環境](docs/compatibility.md)にあります。DBの実験にはテスト専用のサーバーを使います。配布物は[リリース手順](docs/releasing.md)で作成し、ソースからの利用と通常インストールの両方を確認します。
 
 ## 不具合報告に添える情報
 
-通常の不具合は、[このリポジトリのIssues](https://github.com/nibuno/django-ninja-ulid/issues)へ次の情報を添えて報告できます。リポジトリがprivateの間は、アクセスできる利用者に限ります。
+不具合は、[このリポジトリのIssues](https://github.com/nibuno/django-ninja-ulid/issues)へ次の情報を添えて報告してください。
 
 - Python、django-ninja-ulid、Django、Ninja、Pydantic、ULIDライブラリ、DBの版。
 - 問題を再現する最小のモデル・Schema・API定義。
