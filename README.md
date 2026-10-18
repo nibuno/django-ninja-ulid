@@ -1,93 +1,142 @@
 # django-ninja-ulid
 
-Django Ninjaで26文字のULIDを扱うための型と、既存のULIDFieldから応答Schemaを作るアダプタです。IDの保存・復元・生成には既存ライブラリを使います。
+[![CI](https://github.com/nibuno/django-ninja-ulid/actions/workflows/ci.yml/badge.svg)](https://github.com/nibuno/django-ninja-ulid/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nibuno/django-ninja-ulid/blob/main/LICENSE)
 
-現在は[privateリポジトリ](https://github.com/nibuno/django-ninja-ulid)で公開を準備しています。配布名は`django-ninja-ulid`、import名は`django_ninja_ulid`、ライセンスはMITです。Python 3.12〜3.14、Django 5.2.18／6.1.2、SQLite／PostgreSQL 18.6の12通りで動作を確認しました。[確認した環境と再実行手順](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)
+[Django Ninja](https://django-ninja.dev/)のAPIで、[ULID](https://github.com/ulid/spec)を26文字の文字列として入出力するためのライブラリです。
 
-初回版は`0.1.0`です。現在は公開準備中で、PyPIにはまだアップロードしていません。ソースを取得した後、このディレクトリでインストールできます。
+- **`ApiULID`**：ULIDを検証・正規化し、26文字の文字列として出力するPydanticの型
+- **`create_ulid_response_schema`**：ULIDFieldを含むDjangoモデルから、応答用のSchemaを作る関数
+
+IDの保存と生成は、既存の[python-ulid-django](https://pypi.org/project/python-ulid-django/)に任せます。このライブラリは、API側の型と変換だけを担当します。
+
+## なぜ必要か
+
+python-ulid-djangoの`ULIDField`をDjango Ninjaの`ModelSchema`でそのまま使うと、次の問題が起きます。
+
+- `ULIDField`は`UUIDField`を継承しているため、NinjaはこのフィールドをUUID型として扱います。26文字のULIDを入力すると、UUIDとして検証されて422になります。
+- 応答では、ULIDオブジェクトがJSONに変換できず、500になります。
+- `register_field("UUIDField", ...)`で型を差し替えると、通常の`UUIDField`までULIDとして扱われてしまいます。
+
+このライブラリは、ULIDのフィールドだけを判別して型を差し替えます。通常のUUIDはUUIDのまま残ります。
+
+## インストール
 
 ```bash
-python -m pip install .
-# Djangoモデルと連携する場合
-python -m pip install '.[orm]'
+# 型（ApiULID）だけを使う場合
+pip install django-ninja-ulid
+
+# Djangoモデルとの連携も使う場合
+pip install "django-ninja-ulid[orm]"
 ```
 
-公開後は、型だけなら`django-ninja-ulid==0.1.0`、モデル連携も使うなら`django-ninja-ulid[orm]==0.1.0`を導入します。
+`orm` extraを付けると、python-ulid-djangoも一緒にインストールされます。
 
-## 型だけを使う
+## 使い方
+
+### `ApiULID`：入力と出力の型
 
 ```python
-from ninja import Schema
+from ninja import NinjaAPI, Schema
 from django_ninja_ulid import ApiULID
 
+api = NinjaAPI()
 
-class ItemInput(Schema):
-    id: ApiULID
+
+class ItemIn(Schema):
+    owner_id: ApiULID
+
+
+@api.get("/items/{item_id}")
+def get_item(request, item_id: ApiULID):
+    ...
 ```
 
-`ApiULID`のimportはDjangoの設定やモデル連携を読み込みません。`python-ulid-django`のインストールも不要です。基礎の依存にはDjango・Django Ninja・Pydantic・python-ulidを含めています。
+- 入力は26文字のASCII文字列だけを受け付けます。小文字は大文字に正規化します。
+- 使えない文字、128bitを超える値（先頭が8以降）、整数・真偽値・null・オブジェクト・配列は、422の検証エラーになります。
+- 出力は、常に大文字26文字の文字列です。
+- nullを許可したい場合は、`ApiULID | None`と書きます。
+- `ApiULID`だけを使う場合は、Djangoの設定もpython-ulid-djangoも読み込みません。Pydanticの`TypeAdapter`からも使えます。
 
-型はPydanticから直接利用することもできます。
+### `create_ulid_response_schema`：モデルから応答Schemaを作る
 
 ```python
-from pydantic import TypeAdapter
-from django_ninja_ulid import ApiULID
+from django.db import models
+from ulid import ULID
+from ulid_django.models import ULIDField
 
-adapter = TypeAdapter(ApiULID)
-value = adapter.validate_python("01arz3ndektsv4rrffq69g5fav")
-assert adapter.dump_python(value) == "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+class Owner(models.Model):
+    id = ULIDField(primary_key=True, default=ULID, editable=False)
+
+
+class Tag(models.Model):
+    id = ULIDField(primary_key=True, default=ULID, editable=False)
+
+
+class Item(models.Model):
+    id = ULIDField(primary_key=True, default=ULID, editable=False)
+    public_uuid = models.UUIDField()
+    name = models.CharField(max_length=100)
+    owner = models.ForeignKey(Owner, null=True, on_delete=models.SET_NULL)
+    tags = models.ManyToManyField(Tag)
 ```
 
-- ASCIIの26文字を受け付け、小文字を大文字へ正規化します。
-- 禁止文字や先頭が0〜7を超える表記、整数・真偽値・オブジェクト・配列などを拒否します。
-- PythonのULIDオブジェクトは内部値として受け付けます。
-- 出力は大文字の26文字の文字列です。NinjaがPython形式で応答を取り出す場合も文字列化します。
-- nullを許可する箇所は`ApiULID | None`とします。入力の省略は、手書きSchemaで既定値を指定します。
-
-## Djangoモデルと連携する
-
-モデル連携には`orm` extraを使います。公開後の導入名は`django-ninja-ulid[orm]`です。このextraが`python-ulid-django`を追加します。モデル連携のimportはDjangoの初期化後に行います。
-
 ```python
+from django.shortcuts import get_object_or_404
 from django_ninja_ulid.orm import create_ulid_response_schema
-from myapp.models import Item
 
-ItemOutput = create_ulid_response_schema(
+ItemOut = create_ulid_response_schema(
     Item,
-    name="ItemOutput",
+    name="ItemOut",
     fields=["id", "public_uuid", "name", "owner", "tags"],
 )
+
+
+@api.get("/items/{item_id}", response=ItemOut)
+def get_item(request, item_id: ApiULID):
+    return get_object_or_404(Item.objects.prefetch_related("tags"), pk=item_id)
 ```
 
-対象は`python-ulid-django`のULIDFieldと、その派生Fieldです。通常のUUIDはUUIDのまま扱います。外部キー・多対多は、関連先のモデル全体ではなく主キーを返します。
+```json
+{
+  "id": "01JABCDXYZ0123456789ABCDEF",
+  "public_uuid": "8f14e45f-ceea-467f-a0e6-4b6f8b8a8c1d",
+  "name": "example",
+  "owner": "01JABCDXYZ0123456789ABCDEG",
+  "tags": ["01JABCDXYZ0123456789ABCDEH"]
+}
+```
 
-上書きするULID項目は全て応答に必須です。モデルの既定値・ID生成関数を引き継がず、保存済みのIDの欠落を新しいIDで補いません。
+- ULIDのフィールドだけを`ApiULID`に差し替えます。ULID以外のフィールドは、Ninjaの型推論のまま残ります。
+- 外部キーと多対多は、関連先のモデルではなく主キーのULIDを返します。
+- 公開するフィールドは`fields`で必ず指定します。空のリストは拒否します。
+- `django_ninja_ulid.orm`は、Djangoの初期化が終わってからimportしてください。
 
-| 設定 | 応答の扱い |
+| モデルの定義 | 応答での扱い |
 |---|---|
-| 単一ULID、`null=False` | 必須、null不可 |
-| 単一ULID・外部キー、`null=True` | 必須、明示的なnullは可 |
-| 多対多 | 必須、空配列は可、nullは不可 |
-| ULID以外の項目 | Ninjaの型・必須性・既定値を保持 |
+| ULIDField（`null=False`） | 必須、nullにならない |
+| ULIDField・外部キー（`null=True`） | 必須、nullになりうる |
+| 多対多 | 必須、空の配列はありうる、nullにならない |
+| ULID以外のフィールド | Ninjaの通常の扱いのまま |
 
-title・descriptionは`verbose_name`・`help_text`から作ります。外部キーはPython属性の`attname`から読み、DB列名は使いません。
+### 手書きの`ModelSchema`で使う
 
-## 手書きModelSchema
-
-外部キーの読み取りと、多対多のモデルからPKへの変換も指定します。
+Schemaを自分で書く場合は、`ApiULID`と`related_ids`を組み合わせます。
 
 ```python
 from typing import Annotated
+
 from ninja import ModelSchema
 from pydantic import BeforeValidator, Field
+
 from django_ninja_ulid import ApiULID
 from django_ninja_ulid.orm import related_ids
-from myapp.models import Item
 
 
-class ItemOutput(ModelSchema):
+class ItemOut(ModelSchema):
     id: ApiULID
-    owner: ApiULID | None = Field(..., alias=Item._meta.get_field("owner").attname)
+    owner: ApiULID | None = Field(..., alias="owner_id")
     tags: Annotated[list[ApiULID], BeforeValidator(related_ids)]
 
     class Meta:
@@ -95,51 +144,48 @@ class ItemOutput(ModelSchema):
         fields = ["id", "public_uuid", "name", "owner", "tags"]
 ```
 
-`related_ids`はManager・QuerySet・モデルのリストやタプルをPKのリストへ変換します。IDの形式検証は後続の`ApiULID`が担当します。
+`related_ids`は、Manager・QuerySet・モデルのリストを主キーのリストに変換します。
 
-## 対応範囲と制限
+## 対応範囲
 
-生成関数は、ネストしない応答専用です。次の設定を生成時に拒否します。
+`create_ulid_response_schema`は、ネストしない応答専用です。次の設定を渡すと`ValueError`になります。
 
-- 空の`fields`と`None`。
-- 非主キーを参照する`to_field`付き外部キー。
-- 逆参照、OneToOneField、複合主キー。
+- 空の`fields`
+- 主キー以外を参照する`to_field`付きの外部キー
+- 逆参照、`OneToOneField`、複合主キー
 
-`to_field="主キー名"`はDjangoが通常の主キー参照と同じ状態へ正規化するため、通常の参照として扱います。作成・PATCH入力の自動生成、ネスト、他のFieldライブラリ、非同期API、性能保証は対象に含めません。
+入力用・PATCH用Schemaの自動生成、ネストした応答、python-ulid-django以外のULIDFieldには、まだ対応していません。
 
-Ninja 1.7.1で同じSchemaを異なる`by_alias`設定に共有すると、OpenAPIの定義が上書きされます。応答形式ごとに別の`name`でSchemaを生成してください。HTTP応答自体は各設定に従います。
+## 既知の制限
 
-また、OpenAPIは入力と応答に同じパターンを使うため、応答側も小文字を許容する記述になります。実際の出力は大文字です。
+- Ninja 1.7.1では、同じSchemaを`by_alias`の設定が違うルートで使い回すと、OpenAPIの定義が後から登録したほうで上書きされます。HTTPの応答自体は正しく返ります。出力形式ごとに、別の`name`でSchemaを作ってください。
+- OpenAPIでは入力と応答に同じ文字パターンを使っているため、応答側も小文字を許すように書かれます。実際の出力は常に大文字です。
 
-## ローカルでの再実行
+## 動作確認済みの環境
 
-このディレクトリだけで開発環境と配布物を準備できます。Djangoモデルを使うテストのため、`orm` extraも指定します。
+| Python | Django | DB |
+|---|---|---|
+| 3.12 / 3.13 / 3.14 | 5.2.18 / 6.1.2 | SQLite / PostgreSQL 18.6 |
 
-```bash
-uv sync --extra orm
-uv run --extra orm pytest -q --junitxml=local-checks/pytest.xml
-uv build
-uv run --extra orm twine check dist/*
-```
+上の12通りすべての組み合わせを、GitHub Actionsで検証しています。依存ライブラリは、検証済みの次の版に固定しています。
 
-`tests/poc`は元のPoCのAPIをテスト用に保持したものです。`tests/poc/adapter.py`はインストールした`django_ninja_ulid`を読み、元のPoCの実装へは依存しません。wheelには`src/django_ninja_ulid`だけを含めます。
+- Django Ninja 1.7.1
+- Pydantic 2.13.5
+- python-ulid 4.0.1
+- python-ulid-django 1.6.0（`orm` extra）
 
-## 対応環境
+詳しい検証内容は[docs/compatibility.md](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)にまとめています。
 
-| Python | Django | SQLite | PostgreSQL 18.6 |
-|---|---|---|---|
-| 3.12 | 5.2.18／6.1.2 | 両方で成功 | 両方で成功 |
-| 3.13 | 5.2.18／6.1.2 | 両方で成功 | 両方で成功 |
-| 3.14 | 5.2.18／6.1.2 | 両方で成功 | 両方で成功 |
+## バージョンの方針
 
-各組み合わせで、型・モデル連携などの82件のテストと、新規Djangoプロジェクトでのmigration・作成・取得・OpenAPI確認が成功しています。リリース検査のテストはこれらに追加しています。Ninja 1.7.1、Pydantic 2.13.5、python-ulid 4.0.1、python-ulid-django 1.6.0を検証済みの版として固定しています。
+公開APIは、`ApiULID`、`create_ulid_response_schema`、`related_ids`の3つです。
 
-依存指定はDjango 5.2.18以降の5.2系と6.1.2以降の6.1系のパッチ更新を許可しますが、対応を確認した版は上表に限ります。Django 6.0、他の依存の版、追加のDBは対応宣言に含めません。SQLiteの実測版などは[検証記録](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)を参照してください。
+0.x系の間は、互換性のない変更をマイナーバージョン（例：0.1 → 0.2）で、互換性を保つ修正をパッチバージョン（例：0.1.0 → 0.1.1）で出します。変更内容と移行方法は[CHANGELOG](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)に記録します。詳しくは[docs/versioning.md](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/versioning.md)を見てください。
 
-[GitHub Actions](https://github.com/nibuno/django-ninja-ulid/actions/workflows/ci.yml)とローカルの実行は、同じ[ci-matrix.json](ci-matrix.json)を使います。CIではsdistから作ったwheelを通常インストールし、ORM extraなしの型単体の利用も確認します。
+## 開発に参加する
 
-## バージョンと問い合わせ
+不具合の報告や開発の手順は、[CONTRIBUTING.md](https://github.com/nibuno/django-ninja-ulid/blob/main/CONTRIBUTING.md)にまとめています。
 
-公開APIは`ApiULID`、`create_ulid_response_schema`、`related_ids`です。`0.x`では破壊的変更をマイナー版、互換性を保つ修正をパッチ版で出します。変更と移行方法をCHANGELOGへ記録し、非推奨化を経られる変更は事前に案内します。[互換性方針](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/versioning.md)、[変更履歴](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)
+## ライセンス
 
-不具合報告には、利用した版・DB・最小のモデルとSchema・再現手順を添えてください。[開発・報告の手順](https://github.com/nibuno/django-ninja-ulid/blob/main/CONTRIBUTING.md)に必要な情報をまとめています。公開までの作業は[リリース手順](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/releasing.md)、本人が入力する値と操作は[公開設定の手順](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/publishing-setup.md)を参照してください。
+[MIT License](https://github.com/nibuno/django-ninja-ulid/blob/main/LICENSE)

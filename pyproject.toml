@@ -9,6 +9,7 @@ description = "ULID validation and flat model response schemas for Django Ninja.
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
+keywords = ["django", "django-ninja", "ulid", "pydantic", "api"]
 # Python series covered by ci-matrix.json.
 requires-python = ">=3.12,<3.15"
 classifiers = [
@@ -31,7 +32,8 @@ dependencies = [
 orm = ["python-ulid-django==1.6.0"]
 
 [project.urls]
-Source = "https://github.com/nibuno/django-ninja-ulid"
+Homepage = "https://github.com/nibuno/django-ninja-ulid"
+Source ="https://github.com/nibuno/django-ninja-ulid"
 Issues = "https://github.com/nibuno/django-ninja-ulid/issues"
 Changelog = "https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md"
 

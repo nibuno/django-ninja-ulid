@@ -1,6 +1,6 @@
 # リリースの準備と公開手順
 
-更新日：2026-10-18。初回版は`0.1.0`。現在は配布物の検査までを実施し、リポジトリのpublic化、TestPyPI・PyPIへのアップロード、公開タグのpushは実施待ちとする。
+更新日：2026-10-19。初回版は`0.1.0`。public化と外部設定を確認済み。TestPyPIへの送信・取得確認を有効化し、本番PyPIへの送信は引き続き無効とする。
 
 ## 現在実行できる準備
 
@@ -15,7 +15,7 @@ flowchart LR
   Approval --> PyPI["同じ配布物をPyPIへ送信"]
 ```
 
-編集元は[release-flow.mmd](assets/release-flow.mmd)。現在有効なのはCIとPrepare releaseであり、公開処理は下記の無効なテンプレートに残している。手動のPrepare releaseはCIを自動で再実行しないため、候補として採用する際は同じcommitのCI成功も確認する。
+編集元は[release-flow.mmd](assets/release-flow.mmd)。CI・Prepare release・TestPyPIへの公開ワークフローを有効にしている。手動のPrepare releaseはCIを自動で再実行しないため、候補として採用する際は同じcommitのCI成功も確認する。
 
 ### ローカルでの配布物検査
 
@@ -41,31 +41,24 @@ Actionsの成果物は`release-<version>-<commit>`の名前で30日間保存し�
 
 期限切れや修正によって作り直した配布物は、新しい候補として再確認する。TestPyPIで検証した後に、同じ候補として再ビルドしない。
 
-## 無効な公開テンプレート
+## TestPyPIへの公開
 
-[publish.yml.disabled](../workflow-templates/publish.yml.disabled)は`.github/workflows`の外に置いているため、GitHub Actionsとして起動しない。TestPyPIとPyPIの両アップロードjobにも`if: false`を指定している。外部設定と実施の判断が済むまで、この配置と無効化を維持する。
+[Publish](../.github/workflows/publish.yml)は`v*`タグのpushで起動する。タグは配布版と一致させる（`0.1.0`の場合は`v0.1.0`）。CIの成功後にPrepare releaseで配布物を一度だけ作り、TestPyPIへ送信する。取得したwheelのSHA256をmanifestと照合し、新規Djangoプロジェクトで動作を確認する。
 
-将来有効化する構成は、タグでCIを通し、Prepare releaseを呼んで配布物を一度だけ作り、TestPyPIでの取得・SHA256照合・新規プロジェクト確認を経て、同じ成果物をPyPIへ送るものである。送信先ごとに`testpypi`・`pypi`のenvironmentを使い、PyPIの送信前は本人の承認を必須にする。
+`testpypi` environmentとTrusted PublisherによるOIDC認証を使う。`id-token: write`は送信jobだけに与える。本番の`pypi` jobは`if: false`で無効のままとし、今回のタグ実行では送信しない。本番公開には別途実施判断とワークフローの変更が必要であり、検証した配布物を再ビルドせず使う。
 
-ビルドと公開は別jobにする。OIDCの`id-token: write`は通常の公開jobだけに与え、再利用可能なワークフローはCIとビルドに限る。これは[PyPA Actionの説明](https://github.com/pypa/gh-action-pypi-publish#trusted-publishing)に従う。送信処理とTestPyPIからの取得はまだ実行しておらず、テンプレートの構文・無効化の確認までが今回の範囲である。
-
-テンプレートの両送信jobを有効にする前に、`pypi` environmentの承認を実際に要求できることを確認する。environment名を書くだけでは承認を必須にできない。現在はenvironmentの作成・設定を行っていない。[GitHubのenvironment設定](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
-
-GitHub Free・Pro・Teamでは、必須レビュアーはpublicリポジトリに限られる。そのため、現在のprivateの状態で同じ承認設定を利用できるとは扱わず、public化の時期と利用条件を本人が確認してから公開処理を有効にする。承認者が本人だけの場合は、自身が起動したrunを承認できる設定にする。[利用条件と自己承認の設定](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
-
-ローカルの構文検査にはactionlint 1.7.12を使った。テンプレートの意図した`if: false`だけを除外するため、次のように検査を分ける。
+構文検査は次のとおり。本番jobの意図した無効化だけを除外する。
 
 ```bash
-actionlint -shellcheck= -pyflakes= .github/workflows/ci.yml .github/workflows/prepare-release.yml
-actionlint -shellcheck= -pyflakes= -ignore 'constant expression "false" in condition' workflow-templates/publish.yml.disabled
+actionlint -shellcheck= -pyflakes= -ignore 'constant expression "false" in condition' .github/workflows/*.yml
 ```
 
 ## 決定した所有者・承認方針と本人の設定
 
 PyPI・TestPyPIは本人の個人アカウントで所有し、追加メンテナーを置かない。GitHubでは`testpypi`と`pypi`を分け、本番の`pypi`は本人`nibuno`の承認を必須にする。この方針は了承済みである。
 
-具体的な入力値と操作順序は、[本人が行う公開設定の手順](publishing-setup.md)にまとめた。アカウントの確認、後日のpublic化、environmentと承認者、両サイトのpending publisher登録までを扱う。
+具体的な入力値と操作順序は、[本人が行う公開設定の手順](publishing-setup.md)にまとめた。アカウントの確認、public化、environmentと承認者、両サイトのpending publisher登録までを扱う。
 
-両サイトの実際のアカウント名と設定状態は未確認である。現在は手順の作成までで止め、外部設定・public化・アップロードは実施していない。設定完了後も、公開テンプレートの有効化とTestPyPIへのアップロードには別途実施の指示が必要である。
+2026-10-19にブラウザで両サイトのアカウント`nibu`、対象リポジトリの`publish.yml`と各environmentに対応するpending publisherを確認した。両environmentは`v*`タグに制限され、本番は`nibuno`の承認必須、自己承認可、管理者の承認回避は無効。本人の指示によりTestPyPIへのアップロードと取得確認を進める。
 
-TestPyPIからの検証では、依存を通常のPyPIからロックどおりに導入し、対象パッケージだけをTestPyPIから`--no-deps`で取得する。テンプレートは取得したwheelのSHA256を準備済みmanifestと照合する。PyPIへの送信は、その確認に成功した同じwheel・sdistを対象にする。[TestPyPIの利用手順](https://packaging.python.org/en/latest/guides/using-testpypi/)、[PyPAの公開手順](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/)
+TestPyPIからの検証では、依存を通常のPyPIからロックどおりに導入し、対象パッケージだけをTestPyPIから`--no-deps`で取得する。ワークフローは取得したwheelのSHA256を準備済みmanifestと照合する。PyPIへの送信は、その確認に成功した同じwheel・sdistを対象にする。[TestPyPIの利用手順](https://packaging.python.org/en/latest/guides/using-testpypi/)、[PyPAの公開手順](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/)

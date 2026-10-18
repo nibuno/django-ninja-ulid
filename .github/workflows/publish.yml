@@ -1,5 +1,5 @@
-# Preparation only. Keep this file outside .github/workflows until authorized.
-# Both upload jobs are also disabled. Enable only after publisher/environment review.
+# Tag releases publish to TestPyPI and verify the downloaded wheel.
+# Production PyPI publishing remains disabled pending a separate release decision.
 name: Publish
 
 on:
@@ -24,7 +24,6 @@ jobs:
       release_tag: ${{ github.ref_name }}
 
   testpypi:
-    if: ${{ false }} # Owner approval and Trusted Publisher setup are pending.
     needs: build
     runs-on: ubuntu-latest
     environment:
