@@ -83,6 +83,7 @@ class Item(models.Model):
 ```
 
 ```python
+from django.shortcuts import get_object_or_404
 from django_ninja_ulid.orm import create_ulid_response_schema
 
 ItemOut = create_ulid_response_schema(
@@ -94,7 +95,7 @@ ItemOut = create_ulid_response_schema(
 
 @api.get("/items/{item_id}", response=ItemOut)
 def get_item(request, item_id: ApiULID):
-    return Item.objects.prefetch_related("tags").get(pk=str(item_id))
+    return get_object_or_404(Item.objects.prefetch_related("tags"), pk=item_id)
 ```
 
 ```json
