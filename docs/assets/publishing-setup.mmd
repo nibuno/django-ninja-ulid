@@ -1,0 +1,6 @@
+flowchart LR
+  Account["本人アカウント・入力値を確認"] --> Decision{"後日: 本人がpublic化を判断"}
+  Decision --> Public["リポジトリをpublic化"]
+  Public --> Env["environment・承認者を設定"]
+  Env --> Publisher["両サイトでpending publisherを登録"]
+  Publisher --> Stop["設定完了・アップロード前で停止"]

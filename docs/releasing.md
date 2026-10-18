@@ -60,21 +60,12 @@ actionlint -shellcheck= -pyflakes= .github/workflows/ci.yml .github/workflows/pr
 actionlint -shellcheck= -pyflakes= -ignore 'constant expression "false" in condition' workflow-templates/publish.yml.disabled
 ```
 
-## 次に本人が決める事項
+## 決定した所有者・承認方針と本人の設定
 
-| 項目 | 推奨する初回の方針 | 決定後に行う作業 |
-|---|---|---|
-| PyPI・TestPyPIの所有者 | 本人の個人アカウントをそれぞれOwnerにする。初回は追加メンテナーを置かない | アカウントとプロジェクトの所有・認証状態を本人が確認する |
-| GitHubの公開environmentと承認者 | `testpypi`と`pypi`を分け、PyPIは本人の承認を必須にする | 利用できる承認設定を確認し、environmentとTrusted Publisherを設定する |
-| public化と外部操作を進める時点 | この準備とは別に、本人が明示的に指示する | public化・外部設定・TestPyPIへのアップロードを、許可された範囲で進める。PyPIの実施は最後に本人が判断する |
+PyPI・TestPyPIは本人の個人アカウントで所有し、追加メンテナーを置かない。GitHubでは`testpypi`と`pypi`を分け、本番の`pypi`は本人`nibuno`の承認を必須にする。この方針は了承済みである。
 
-設定するTrusted PublisherのGitHub側の識別値は次のとおり。両サイトのアカウント名はまだ決まっていない。
+具体的な入力値と操作順序は、[本人が行う公開設定の手順](publishing-setup.md)にまとめた。アカウントの確認、後日のpublic化、environmentと承認者、両サイトのpending publisher登録までを扱う。
 
-| 登録先 | GitHub owner | repository | workflow | environment |
-|---|---|---|---|---|
-| TestPyPI | `nibuno` | `django-ninja-ulid` | `publish.yml` | `testpypi` |
-| PyPI | `nibuno` | `django-ninja-ulid` | `publish.yml` | `pypi` |
-
-TestPyPIとPyPIは別のサービスとして設定する。初回プロジェクトではpending publisherの利用も検討する。[PyPIの初回作成](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)、[Trusted Publisherの利用](https://docs.pypi.org/trusted-publishers/using-a-publisher/)
+両サイトの実際のアカウント名と設定状態は未確認である。現在は手順の作成までで止め、外部設定・public化・アップロードは実施していない。設定完了後も、公開テンプレートの有効化とTestPyPIへのアップロードには別途実施の指示が必要である。
 
 TestPyPIからの検証では、依存を通常のPyPIからロックどおりに導入し、対象パッケージだけをTestPyPIから`--no-deps`で取得する。テンプレートは取得したwheelのSHA256を準備済みmanifestと照合する。PyPIへの送信は、その確認に成功した同じwheel・sdistを対象にする。[TestPyPIの利用手順](https://packaging.python.org/en/latest/guides/using-testpypi/)、[PyPAの公開手順](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/)

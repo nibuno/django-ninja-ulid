@@ -142,4 +142,4 @@ uv run --extra orm twine check dist/*
 
 公開APIは`ApiULID`、`create_ulid_response_schema`、`related_ids`です。`0.x`では破壊的変更をマイナー版、互換性を保つ修正をパッチ版で出します。変更と移行方法をCHANGELOGへ記録し、非推奨化を経られる変更は事前に案内します。[互換性方針](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/versioning.md)、[変更履歴](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)
 
-不具合報告には、利用した版・DB・最小のモデルとSchema・再現手順を添えてください。[開発・報告の手順](https://github.com/nibuno/django-ninja-ulid/blob/main/CONTRIBUTING.md)に必要な情報をまとめています。公開までの作業と実施待ちの項目は[リリース手順](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/releasing.md)を参照してください。
+不具合報告には、利用した版・DB・最小のモデルとSchema・再現手順を添えてください。[開発・報告の手順](https://github.com/nibuno/django-ninja-ulid/blob/main/CONTRIBUTING.md)に必要な情報をまとめています。公開までの作業は[リリース手順](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/releasing.md)、本人が入力する値と操作は[公開設定の手順](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/publishing-setup.md)を参照してください。
