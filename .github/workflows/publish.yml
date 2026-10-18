@@ -1,14 +1,17 @@
 # Tag releases publish to TestPyPI and verify the downloaded wheel.
-# Production PyPI publishing remains disabled pending a separate release decision.
+# Manual promotion reuses the verified 0.1.0 artifact; the pypi environment requires approval.
 name: Publish
 
 on:
   push:
     tags:
       - "v*"
+      - "!v*-publish.*"
+  workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -16,6 +19,7 @@ concurrency:
 
 jobs:
   tests:
+    if: github.event_name == 'push'
     uses: ./.github/workflows/ci.yml
   build:
     needs: tests
@@ -72,20 +76,72 @@ jobs:
           uv pip install --python .venv/bin/python --no-deps --reinstall-package django-ninja-ulid downloaded/*.whl
           .venv/bin/python scripts/check_install.py
 
-  pypi:
-    if: ${{ false }} # Enable only with a protected pypi environment and owner approval.
-    needs: [build, check-testpypi]
+  verify-promotion:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/tags/v0.1.0-publish.1'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Confirm successful TestPyPI verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/39173153474" > source-run.json
+          jq -e '.conclusion == "success" and .event == "push" and .path == ".github/workflows/publish.yml" and .head_sha == "545c84c2fc4e43149344b2b4ca3f08950b04a4e4"' source-run.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/39173153474/jobs?per_page=100" > source-jobs.json
+          jq -e 'any(.jobs[]; .name == "check-testpypi" and .conclusion == "success")' source-jobs.json
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: "12152919501"
+          run-id: "39173153474"
+          github-token: ${{ github.token }}
+          path: bundle/
+      - name: Verify the pinned release candidate
+        run: |
+          cmp release-candidates/0.1.0.json bundle/release-manifest.json
+          python3 scripts/check_release.py --verify --dist-dir bundle/dist --manifest release-candidates/0.1.0.json
+      - name: Recheck the wheel served by TestPyPI
+        run: |
+          python3 -m pip download --no-cache-dir --no-deps --only-binary=:all: --index-url https://test.pypi.org/simple/ --dest downloaded "django-ninja-ulid==0.1.0"
+          python3 scripts/check_release.py --downloaded-wheel downloaded/*.whl --manifest release-candidates/0.1.0.json
+      - name: Write approval summary
+        run: |
+          {
+            echo '## PyPI promotion: django-ninja-ulid 0.1.0'
+            echo 'Source: https://github.com/nibuno/django-ninja-ulid/actions/runs/39173153474'
+            echo 'The original wheel and sdist will be published without rebuilding.'
+            echo '```json'
+            cat release-candidates/0.1.0.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  pypi:
+    needs: verify-promotion
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: pypi
       url: https://pypi.org/project/django-ninja-ulid/
     permissions:
+      contents: read
+      actions: read
       id-token: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: ${{ needs.build.outputs.artifact_name }}
+          artifact-ids: "12152919501"
+          run-id: "39173153474"
+          github-token: ${{ github.token }}
           path: bundle/
+      - name: Verify the exact files immediately before publishing
+        run: |
+          cmp release-candidates/0.1.0.json bundle/release-manifest.json
+          python3 scripts/check_release.py --verify --dist-dir bundle/dist --manifest release-candidates/0.1.0.json
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: bundle/dist/

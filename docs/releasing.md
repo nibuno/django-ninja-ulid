@@ -1,6 +1,6 @@
 # リリースの準備と公開手順
 
-更新日：2026-10-19。初回版は`0.1.0`。public化と外部設定を確認済み。TestPyPIへの送信・取得確認を有効化し、本番PyPIへの送信は引き続き無効とする。
+更新日：2026-10-19。初回版は`0.1.0`。public化と外部設定を確認済み。TestPyPIへの送信・取得確認を有効化し、本番PyPIへは検証済みの配布物を使い、手動実行とenvironmentの承認を経て送信する。
 
 ## 現在実行できる準備
 
@@ -45,12 +45,12 @@ Actionsの成果物は`release-<version>-<commit>`の名前で30日間保存し�
 
 [Publish](../.github/workflows/publish.yml)は`v*`タグのpushで起動する。タグは配布版と一致させる（`0.1.0`の場合は`v0.1.0`）。CIの成功後にPrepare releaseで配布物を一度だけ作り、TestPyPIへ送信する。取得したwheelのSHA256をmanifestと照合し、新規Djangoプロジェクトで動作を確認する。
 
-`testpypi` environmentとTrusted PublisherによるOIDC認証を使う。`id-token: write`は送信jobだけに与える。本番の`pypi` jobは`if: false`で無効のままとし、今回のタグ実行では送信しない。本番公開には別途実施判断とワークフローの変更が必要であり、検証した配布物を再ビルドせず使う。
+`testpypi` environmentとTrusted PublisherによるOIDC認証を使う。`id-token: write`は送信jobだけに与える。通常のリリースタグでは本番へ送信しない。本番公開は以下の手動操作で行う。
 
-構文検査は次のとおり。本番jobの意図した無効化だけを除外する。
+構文検査は次のとおり。
 
 ```bash
-actionlint -shellcheck= -pyflakes= -ignore 'constant expression "false" in condition' .github/workflows/*.yml
+actionlint -shellcheck= -pyflakes= .github/workflows/*.yml
 ```
 
 ## 決定した所有者・承認方針と本人の設定
@@ -62,3 +62,17 @@ PyPI・TestPyPIは本人の個人アカウントで所有し、追加メンテ�
 2026-10-19にブラウザで両サイトのアカウント`nibu`、対象リポジトリの`publish.yml`と各environmentに対応するpending publisherを確認した。両environmentは`v*`タグに制限され、本番は`nibuno`の承認必須、自己承認可、管理者の承認回避は無効。本人の指示によりTestPyPIへのアップロードと取得確認を進める。
 
 TestPyPIからの検証では、依存を通常のPyPIからロックどおりに導入し、対象パッケージだけをTestPyPIから`--no-deps`で取得する。ワークフローは取得したwheelのSHA256を準備済みmanifestと照合する。PyPIへの送信は、その確認に成功した同じwheel・sdistを対象にする。[TestPyPIの利用手順](https://packaging.python.org/en/latest/guides/using-testpypi/)、[PyPAの公開手順](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/)
+
+## 0.1.0の本番公開
+
+TestPyPIの実行[39173153474](https://github.com/nibuno/django-ninja-ulid/actions/runs/39173153474)で確認したartifact ID `12152919501`を使う。[固定したmanifest](../release-candidates/0.1.0.json)に、配布元commitとwheel・sdistのSHA256を記録した。
+
+`publish.yml`を`v0.1.0-publish.1`タグに対して手動実行する。このタグは公開操作用であり、パッケージの版とソースタグ`v0.1.0`は変更しない。`v*-publish.*`タグのpushではTestPyPIへの再送信を起動しない。
+
+```bash
+gh workflow run publish.yml --ref v0.1.0-publish.1
+```
+
+`verify-promotion`が元の実行の成功、配布物のハッシュ、TestPyPIから再取得したwheelのハッシュを照合する。その後`pypi` jobが承認待ちになる。本人がrunのsummaryとmanifestを確認し、Review deploymentsで`pypi`を選びApprove and deployを押すと送信が始まる。承認後も送信直前に元のartifactを取得して照合し、再ビルドはしない。
+
+artifactが失効・削除された場合やハッシュが異なる場合は停止する。別の配布物へ自動で差し替えない。この手動公開経路は0.1.0専用であり、次の版では元の実行・artifact・manifest・操作用タグを更新する。

@@ -1,0 +1,10 @@
+{
+  "distribution": "django-ninja-ulid",
+  "version": "0.1.0",
+  "expected_tag": "v0.1.0",
+  "source_commit": "545c84c2fc4e43149344b2b4ca3f08950b04a4e4",
+  "files": {
+    "django_ninja_ulid-0.1.0-py3-none-any.whl": "c9f49c9b648db40c6d0eb51ab2b2e58441d3d5c454e781f519869f36e150b52a",
+    "django_ninja_ulid-0.1.0.tar.gz": "cae22c313c275c93a867b32a93491fda55dbdd518c6bb666e4bbea4bdcb4c06b"
+  }
+}
