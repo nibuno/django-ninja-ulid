@@ -2,15 +2,17 @@
 
 Django Ninjaで26文字のULIDを扱うための型と、既存のULIDFieldから応答Schemaを作るアダプタです。IDの保存・復元・生成には既存ライブラリを使います。
 
-現在は[privateリポジトリ](https://github.com/nibuno/django-ninja-ulid)で公開を準備しています。配布名は`django-ninja-ulid`、import名は`django_ninja_ulid`、ライセンスはMITです。Python 3.12〜3.14、Django 5.2.18／6.1.2、SQLite／PostgreSQL 18.6の12通りで動作を確認しました。[確認した環境と再実行手順](docs/compatibility.md)
+現在は[privateリポジトリ](https://github.com/nibuno/django-ninja-ulid)で公開を準備しています。配布名は`django-ninja-ulid`、import名は`django_ninja_ulid`、ライセンスはMITです。Python 3.12〜3.14、Django 5.2.18／6.1.2、SQLite／PostgreSQL 18.6の12通りで動作を確認しました。[確認した環境と再実行手順](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)
 
-PyPIにはまだ公開していません。初回公開の版も未決定で、`0.0.0`は配布物の検証用です。ソースを取得した後、このディレクトリでインストールできます。
+初回版は`0.1.0`です。現在は公開準備中で、PyPIにはまだアップロードしていません。ソースを取得した後、このディレクトリでインストールできます。
 
 ```bash
 python -m pip install .
 # Djangoモデルと連携する場合
 python -m pip install '.[orm]'
 ```
+
+公開後は、型だけなら`django-ninja-ulid==0.1.0`、モデル連携も使うなら`django-ninja-ulid[orm]==0.1.0`を導入します。
 
 ## 型だけを使う
 
@@ -130,8 +132,14 @@ uv run --extra orm twine check dist/*
 | 3.13 | 5.2.18／6.1.2 | 両方で成功 | 両方で成功 |
 | 3.14 | 5.2.18／6.1.2 | 両方で成功 | 両方で成功 |
 
-各組み合わせで82件のテストと、新規Djangoプロジェクトでのmigration・作成・取得・OpenAPI確認が成功しています。Ninja 1.7.1、Pydantic 2.13.5、python-ulid 4.0.1、python-ulid-django 1.6.0を検証済みの版として固定しています。
+各組み合わせで、型・モデル連携などの82件のテストと、新規Djangoプロジェクトでのmigration・作成・取得・OpenAPI確認が成功しています。リリース検査のテストはこれらに追加しています。Ninja 1.7.1、Pydantic 2.13.5、python-ulid 4.0.1、python-ulid-django 1.6.0を検証済みの版として固定しています。
 
-依存指定はDjango 5.2.18以降の5.2系と6.1.2以降の6.1系のパッチ更新を許可しますが、対応を確認した版は上表に限ります。Django 6.0、他の依存の版、追加のDBは対応宣言に含めません。SQLiteの実測版などは[検証記録](docs/compatibility.md)を参照してください。
+依存指定はDjango 5.2.18以降の5.2系と6.1.2以降の6.1系のパッチ更新を許可しますが、対応を確認した版は上表に限ります。Django 6.0、他の依存の版、追加のDBは対応宣言に含めません。SQLiteの実測版などは[検証記録](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)を参照してください。
 
 [GitHub Actions](https://github.com/nibuno/django-ninja-ulid/actions/workflows/ci.yml)とローカルの実行は、同じ[ci-matrix.json](ci-matrix.json)を使います。CIではsdistから作ったwheelを通常インストールし、ORM extraなしの型単体の利用も確認します。
+
+## バージョンと問い合わせ
+
+公開APIは`ApiULID`、`create_ulid_response_schema`、`related_ids`です。`0.x`では破壊的変更をマイナー版、互換性を保つ修正をパッチ版で出します。変更と移行方法をCHANGELOGへ記録し、非推奨化を経られる変更は事前に案内します。[互換性方針](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/versioning.md)、[変更履歴](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)
+
+不具合報告には、利用した版・DB・最小のモデルとSchema・再現手順を添えてください。[開発・報告の手順](https://github.com/nibuno/django-ninja-ulid/blob/main/CONTRIBUTING.md)に必要な情報をまとめています。公開までの作業と実施待ちの項目は[リリース手順](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/releasing.md)を参照してください。

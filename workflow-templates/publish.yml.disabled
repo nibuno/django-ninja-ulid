@@ -1,0 +1,92 @@
+# Preparation only. Keep this file outside .github/workflows until authorized.
+# Both upload jobs are also disabled. Enable only after publisher/environment review.
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    uses: ./.github/workflows/ci.yml
+  build:
+    needs: tests
+    uses: ./.github/workflows/prepare-release.yml
+    with:
+      release_tag: ${{ github.ref_name }}
+
+  testpypi:
+    if: ${{ false }} # Owner approval and Trusted Publisher setup are pending.
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/django-ninja-ulid/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: bundle/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: bundle/dist/
+
+  check-testpypi:
+    needs: [build, testpypi]
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.7.8"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: bundle/
+      - name: Verify the build artifact
+        run: python scripts/check_release.py --verify --dist-dir bundle/dist --manifest bundle/release-manifest.json
+      - name: Download only this package from TestPyPI
+        run: |
+          python -m pip download --no-cache-dir --no-deps --only-binary=:all: --index-url https://test.pypi.org/simple/ --dest downloaded "django-ninja-ulid==$RELEASE_VERSION"
+          python scripts/check_release.py --downloaded-wheel downloaded/*.whl --manifest bundle/release-manifest.json
+      - name: Check the downloaded package with locked PyPI dependencies
+        run: |
+          uv sync --locked --extra orm --python python
+          uv pip install --python .venv/bin/python --no-deps --reinstall-package django-ninja-ulid downloaded/*.whl
+          .venv/bin/python scripts/check_install.py
+
+  pypi:
+    if: ${{ false }} # Enable only with a protected pypi environment and owner approval.
+    needs: [build, check-testpypi]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/django-ninja-ulid/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: bundle/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: bundle/dist/

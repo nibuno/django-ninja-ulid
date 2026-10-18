@@ -25,7 +25,10 @@ def main():
     root = Path(__file__).resolve().parents[1]
     destination = root / "local-checks/matrix"
     destination.mkdir(parents=True, exist_ok=True)
-    wheel = next((root / "dist").glob("*.whl"))
+    version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
+    wheel = root / "dist" / f"django_ninja_ulid-{version}-py3-none-any.whl"
+    if not wheel.exists():
+        parser.error(f"Build the current version before running the matrix: {wheel.name}")
     records = []
     prepared = {}
     locked = tomllib.loads((root / "uv.lock").read_text())
@@ -74,7 +77,7 @@ def main():
                     run([base_python, "-I", str(root / "scripts/check_type_install.py"), "--output", str(folder / "base-install.json")])
 
             python = prepared[key]
-            versions = run([python, "-I", "-c", 'import importlib.metadata,json,sys; print(json.dumps({"python":sys.version.split()[0],"versions":{name:importlib.metadata.version(name) for name in ["Django","django-ninja","pydantic","python-ulid","python-ulid-django","psycopg"]}}))'])
+            versions = run([python, "-I", "-c", 'import importlib.metadata,json,sys; print(json.dumps({"python":sys.version.split()[0],"versions":{name:importlib.metadata.version(name) for name in ["django-ninja-ulid","Django","django-ninja","pydantic","python-ulid","python-ulid-django","psycopg"]}}))'])
             runtime = json.loads(versions)
             record["python_full"] = runtime["python"]
             record["versions"] = runtime["versions"]

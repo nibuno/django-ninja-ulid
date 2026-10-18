@@ -117,7 +117,7 @@ else:
     with connection.cursor() as cursor:
         cursor.execute("SELECT sqlite_version()")
         server = cursor.fetchone()[0]
-print(json.dumps({"status": "passed", "database": connection.vendor, "server_version": server, "python": sys.version.split()[0], "Django": importlib.metadata.version("Django"), "django-ninja": importlib.metadata.version("django-ninja"), "installed_package": django_ninja_ulid.__file__, "checks": ["migrations", "ULID PK/FK/M2M round trip", "UUID", "create/read", "null/empty relations", "invalid input 422", "OpenAPI", "separate alias schemas"]}))
+print(json.dumps({"status": "passed", "database": connection.vendor, "server_version": server, "python": sys.version.split()[0], "package_version": importlib.metadata.version("django-ninja-ulid"), "Django": importlib.metadata.version("Django"), "django-ninja": importlib.metadata.version("django-ninja"), "installed_package": django_ninja_ulid.__file__, "checks": ["migrations", "ULID PK/FK/M2M round trip", "UUID", "create/read", "null/empty relations", "invalid input 422", "OpenAPI", "separate alias schemas"]}))
 '''
 
 

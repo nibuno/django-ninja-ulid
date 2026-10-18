@@ -1,0 +1,6 @@
+flowchart LR
+  CI["CI: Python・Django・DBの検証"] --> Build["配布物・版・同梱物を検査"]
+  Build --> Artifact["wheel・sdist・SHA256を保存"]
+  Artifact --> Test["実施指示後: TestPyPIへ送信・取得確認"]
+  Test --> Approval{"本人によるPyPI公開判断"}
+  Approval --> PyPI["同じ配布物をPyPIへ送信"]
