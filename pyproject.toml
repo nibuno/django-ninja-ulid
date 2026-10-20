@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "django-ninja-ulid"
 version = "0.1.0"
-description = "ULID validation and flat model response schemas for Django Ninja."
+description = "ULID validation, serialization, and model response schemas for Django Ninja."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -34,6 +34,7 @@ orm = ["python-ulid-django==1.6.0"]
 [project.urls]
 Homepage = "https://github.com/nibuno/django-ninja-ulid"
 Source ="https://github.com/nibuno/django-ninja-ulid"
+Documentation = "https://github.com/nibuno/django-ninja-ulid/blob/main/README.md"
 Issues = "https://github.com/nibuno/django-ninja-ulid/issues"
 Changelog = "https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md"
 
@@ -59,6 +60,7 @@ include = [
   "/pyproject.toml",
   "/uv.lock",
   "/README.md",
+  "/README.ja.md",
   "/CHANGELOG.md",
   "/CONTRIBUTING.md",
   "/workflow-templates",
