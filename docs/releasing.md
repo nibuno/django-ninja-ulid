@@ -36,9 +36,9 @@ PRブランチでも同じワークフローを実行できる。その結果は
 
 ### 3. 検証した候補を本番公開用に固定する
 
-現在の`publish.yml`の手動公開経路は`0.1.0`専用である。`v0.1.1`タグをpushしただけでは、本番PyPIには公開されない。
+現在の`publish.yml`の手動公開経路は、下記の実行記録にある`0.1.1`の検証済み候補に固定している。`v0.1.1`タグをpushしただけでは、本番PyPIには公開されない。
 
-TestPyPI検証の成功後、次の変更を別のPRで確認する。run ID・artifact ID・SHA256は成功した実行から取得し、事前に仮の値を設定しない。
+候補を固定するときは、TestPyPI検証の成功後に次の変更を別のPRで確認する。run ID・artifact ID・SHA256は成功した実行から取得し、事前に仮の値を設定しない。今回の`0.1.1`も、この手順で固定した。
 
 1. その実行の`release-manifest.json`を、内容を変えず`release-candidates/0.1.1.json`として保存する。
 2. `verify-promotion`と`pypi`が参照するrun ID・artifact ID・manifest・版を、その候補に更新する。元runの成功、`check-testpypi`の成功、元commitの一致を検査する条件も更新する。
@@ -56,6 +56,23 @@ gh workflow run publish.yml --ref v0.1.1-publish.1
 この操作は手順3の変更を取り込んだ後に行う。候補の照合に成功すると`pypi` jobが承認待ちになる。本人が対象版・元commit・配布物のSHA256・TestPyPIの結果を確認し、GitHubのReview deploymentsで承認すると、本番への送信が始まる。
 
 公開後はPyPIの`0.1.1`、配布物のSHA256、英語の説明と日本語版へのリンクを確認し、CHANGELOGの「未公開」を実際の公開日に更新する。
+
+### 0.1.1のTestPyPI検証記録
+
+2026-10-20に[Publish run 39404044826](https://github.com/nibuno/django-ninja-ulid/actions/runs/39404044826)が成功した。12通りのCI、配布物の作成、TestPyPIへの送信、取得したwheelのSHA256照合、新規Djangoプロジェクトでの確認を完了している。
+
+| 項目 | 固定した値 |
+|---|---|
+| ソースタグ | `v0.1.1` |
+| ソースcommit | `56ef3a73dd270f9d9f46e35f5e1f87237c05aa3f` |
+| 元のrun ID | `39404044826` |
+| artifact ID | `12255538139` |
+| manifest | [release-candidates/0.1.1.json](../release-candidates/0.1.1.json) |
+| 公開操作用タグ | `v0.1.1-publish.1` |
+
+[TestPyPIの0.1.1](https://test.pypi.org/project/django-ninja-ulid/0.1.1/)で、wheel・sdistのSHA256と英語の説明本文が候補に一致することを確認した。日本語READMEのsdistへの同梱、ORMあり・なしの通常インストールも確認済みである。
+
+本番公開では、上記artifactから同じwheel・sdistを取得する。公開操作のソースから再ビルドしない。artifactが期限切れ・削除済みの場合や、元run・manifest・SHA256が一致しない場合は停止する。本番への送信には`pypi` environmentで本人の承認が必要になる。
 
 ## 現在実行できる準備
 
@@ -118,7 +135,9 @@ PyPI・TestPyPIは本人の個人アカウントで所有し、追加メンテ�
 
 TestPyPIからの検証では、依存を通常のPyPIからロックどおりに導入し、対象パッケージだけをTestPyPIから`--no-deps`で取得する。ワークフローは取得したwheelのSHA256を準備済みmanifestと照合する。PyPIへの送信は、その確認に成功した同じwheel・sdistを対象にする。[TestPyPIの利用手順](https://packaging.python.org/en/latest/guides/using-testpypi/)、[PyPAの公開手順](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/)
 
-## 0.1.0の本番公開
+## 0.1.0の本番公開記録（旧手順）
+
+以下は公開済み`0.1.0`の記録である。現在の手動公開経路は`0.1.1`へ更新済みなので、新しい公開には上記の`0.1.1`の手順を使う。
 
 TestPyPIの実行[39173153474](https://github.com/nibuno/django-ninja-ulid/actions/runs/39173153474)で確認したartifact ID `12152919501`を使う。[固定したmanifest](../release-candidates/0.1.0.json)に、配布元commitとwheel・sdistのSHA256を記録した。
 
@@ -130,4 +149,4 @@ gh workflow run publish.yml --ref v0.1.0-publish.1
 
 `verify-promotion`が元の実行の成功、配布物のハッシュ、TestPyPIから再取得したwheelのハッシュを照合する。その後`pypi` jobが承認待ちになる。本人がrunのsummaryとmanifestを確認し、Review deploymentsで`pypi`を選びApprove and deployを押すと送信が始まる。承認後も送信直前に元のartifactを取得して照合し、再ビルドはしない。
 
-artifactが失効・削除された場合やハッシュが異なる場合は停止する。別の配布物へ自動で差し替えない。この手動公開経路は0.1.0専用であり、次の版では元の実行・artifact・manifest・操作用タグを更新する。
+artifactが失効・削除された場合やハッシュが異なる場合は停止する。別の配布物へ自動で差し替えない。`v0.1.0-publish.1`タグに保存された手動公開経路は0.1.0専用である。
