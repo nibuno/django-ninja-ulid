@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 （未公開）
 
 - READMEとPyPIの説明本文を英語に整理し、日本語版を`README.ja.md`として追加。
 - 入出力を確認できる最小例、ORM連携の導入手順、依存条件と検証・文字列化の説明を整備。
+- PyPIの概要とDocumentationリンクを更新し、日本語READMEをsdistに同梱。
+- 公開API・実装・依存バージョンの変更はない。
 
 ## 0.1.0 — 2026-10-19
 
