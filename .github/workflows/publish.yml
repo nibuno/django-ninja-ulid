@@ -1,5 +1,6 @@
-# Tag releases publish to TestPyPI and verify the downloaded wheel.
-# Manual promotion reuses the verified 0.1.2 artifact; the pypi environment requires approval.
+# Release tags publish to TestPyPI and verify the downloaded wheel.
+# Manual promotion matches the source run to the reviewed manifest, then publishes
+# the same artifact after approval in the pypi environment.
 name: Publish
 
 on:
@@ -8,6 +9,15 @@ on:
       - "v*"
       - "!v*-publish.*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (for example, 0.1.3)"
+        required: true
+        type: string
+      run_id:
+        description: "ID of the successful Publish tag-push run that verified the TestPyPI wheel"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -77,43 +87,92 @@ jobs:
           .venv/bin/python scripts/check_install.py
 
   verify-promotion:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/tags/v0.1.2-publish.1'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      SOURCE_RUN_ID: ${{ inputs.run_id }}
+      MANIFEST: release-candidates/${{ inputs.version }}.json
+    outputs:
+      run_id: ${{ inputs.run_id }}
+      manifest: ${{ env.MANIFEST }}
+      artifact_id: ${{ steps.candidate.outputs.artifact_id }}
     steps:
+      - name: Validate the promotion inputs and tag
+        run: |
+          if [[ ! $RELEASE_VERSION =~ ^(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){2}$ ]]; then
+            echo "::error::version must have three numeric components without leading zeros"
+            exit 1
+          fi
+          if [[ ! $SOURCE_RUN_ID =~ ^[0-9]+$ ]]; then
+            echo "::error::run_id must contain only digits"
+            exit 1
+          fi
+          if [[ ! $GITHUB_REF =~ ^refs/tags/v"$RELEASE_VERSION"-publish\.[0-9]+$ ]]; then
+            echo "::error::Dispatch from a tag matching v$RELEASE_VERSION-publish.<n>"
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Confirm successful TestPyPI verification
+      - name: Verify the source run and resolve its release artifact
+        id: candidate
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45099085870" > source-run.json
-          jq -e '.conclusion == "success" and .event == "push" and .path == ".github/workflows/publish.yml" and .head_sha == "829ec20fdaae9e13db2db953b5b7157e9352dc5b"' source-run.json
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45099085870/jobs?per_page=100" > source-jobs.json
-          jq -e 'any(.jobs[]; .name == "check-testpypi" and .conclusion == "success")' source-jobs.json
+          run="repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID"
+          source_commit=$(gh api "$run" | jq -er --arg version "$RELEASE_VERSION" --slurpfile manifest "$MANIFEST" '
+            if .conclusion != "success" or .event != "push" or .path != ".github/workflows/publish.yml"
+              or .head_branch != ("v" + $version) then
+              error("Expected a successful Publish push for v\($version)")
+            elif $manifest[0].version != $version or $manifest[0].source_commit != .head_sha then
+              error("Candidate manifest version or source_commit differs from the source run")
+            else .head_sha end
+          ')
+          gh api --paginate "$run/jobs?per_page=100" | jq -se '
+            any(.[].jobs[]; .name == "check-testpypi" and .conclusion == "success")
+            or error("The source run has no successful check-testpypi job")
+          '
+          gh api --paginate "$run/artifacts?per_page=100" | jq -ser --arg name "release-$RELEASE_VERSION-$source_commit" '
+            [.[].artifacts[] | select(.name == $name)] |
+            if length == 0 then error("Missing artifact \($name)")
+            elif length > 1 then error("Multiple artifacts named \($name)")
+            elif .[0].expired != false then error("Artifact \($name) has expired")
+            else .[0] | "artifact_id=\(.id)", "expires_at=\(.expires_at)" end
+          ' >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          artifact-ids: "14783574890"
-          run-id: "45099085870"
+          artifact-ids: ${{ steps.candidate.outputs.artifact_id }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
           github-token: ${{ github.token }}
           path: bundle/
       - name: Verify the pinned release candidate
         run: |
-          cmp release-candidates/0.1.2.json bundle/release-manifest.json
-          python3 scripts/check_release.py --verify --dist-dir bundle/dist --manifest release-candidates/0.1.2.json
+          cmp "$MANIFEST" bundle/release-manifest.json
+          python3 scripts/check_release.py --verify --dist-dir bundle/dist --manifest "$MANIFEST"
       - name: Recheck the wheel served by TestPyPI
         run: |
-          python3 -m pip download --no-cache-dir --no-deps --only-binary=:all: --index-url https://test.pypi.org/simple/ --dest downloaded "django-ninja-ulid==0.1.2"
-          python3 scripts/check_release.py --downloaded-wheel downloaded/*.whl --manifest release-candidates/0.1.2.json
+          python3 -m pip download --no-cache-dir --no-deps --only-binary=:all: --index-url https://test.pypi.org/simple/ --dest downloaded "django-ninja-ulid==$RELEASE_VERSION"
+          python3 scripts/check_release.py --downloaded-wheel downloaded/*.whl --manifest "$MANIFEST"
       - name: Write approval summary
+        env:
+          ARTIFACT_ID: ${{ steps.candidate.outputs.artifact_id }}
+          EXPIRES_AT: ${{ steps.candidate.outputs.expires_at }}
         run: |
           {
-            echo '## PyPI promotion: django-ninja-ulid 0.1.2'
-            echo 'Source: https://github.com/nibuno/django-ninja-ulid/actions/runs/45099085870'
-            echo 'The original wheel and sdist will be published without rebuilding.'
+            echo "## PyPI promotion of django-ninja-ulid $RELEASE_VERSION"
+            echo
+            echo "- TestPyPI run [$SOURCE_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID)"
+            echo "- Artifact $ARTIFACT_ID expires at $EXPIRES_AT"
+            echo
+            echo 'The pypi job will publish the verified wheel and sdist from this artifact.'
+            echo
             echo '```json'
-            cat release-candidates/0.1.2.json
+            cat "$MANIFEST"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -134,14 +193,16 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          artifact-ids: "14783574890"
-          run-id: "45099085870"
+          artifact-ids: ${{ needs.verify-promotion.outputs.artifact_id }}
+          run-id: ${{ needs.verify-promotion.outputs.run_id }}
           github-token: ${{ github.token }}
           path: bundle/
       - name: Verify the exact files immediately before publishing
+        env:
+          MANIFEST: ${{ needs.verify-promotion.outputs.manifest }}
         run: |
-          cmp release-candidates/0.1.2.json bundle/release-manifest.json
-          python3 scripts/check_release.py --verify --dist-dir bundle/dist --manifest release-candidates/0.1.2.json
+          cmp "$MANIFEST" bundle/release-manifest.json
+          python3 scripts/check_release.py --verify --dist-dir bundle/dist --manifest "$MANIFEST"
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: bundle/dist/

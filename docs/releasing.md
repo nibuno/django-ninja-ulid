@@ -2,9 +2,9 @@
 
 更新日：2026-11-23。`0.1.1`を2026-10-20にPyPIへ公開した。`0.1.2`を2026-11-23にPyPIへ公開した。本番PyPIには、TestPyPIで検証した配布物を手動実行とenvironmentの承認を経て送信する。
 
-## 0.1.1の準備と公開の順序
+## 準備と公開の順序
 
-`0.1.1`ではREADMEを英語化し、日本語版を追加してPyPIメタデータを更新した。公開API・実装・依存条件は`0.1.0`と同じである。公開済みの`0.1.0`と区別するため、以下の手順で新しいパッチ版として公開した。
+手順1と2では、`0.1.1`を例にする。この版ではREADMEを英語化し、日本語版を追加してPyPIメタデータを更新した。公開API・実装・依存条件は`0.1.0`と同じで、新しいパッチ版として公開した。
 
 ### 1. ソースと配布物を確認する（アップロードなし）
 
@@ -36,26 +36,28 @@ PRブランチでも同じワークフローを実行できる。その結果は
 
 ### 3. 検証した候補を本番公開用に固定する
 
-現在の`publish.yml`の手動公開経路は、下記の実行記録にある`0.1.2`の検証済み候補に固定している。`v0.1.2`タグをpushしただけでは、本番PyPIには公開されない。
+`v<version>`のpushで起動した`Publish`と、その`check-testpypi` jobの成功を確認する。候補を固定するPRには、次の2点だけを含める。
 
-候補を固定するときは、TestPyPI検証の成功後に次の変更を別のPRで確認する。run ID・artifact ID・SHA256は成功した実行から取得し、事前に仮の値を設定しない。今回の`0.1.1`も、この手順で固定した。
+1. そのrunのartifact `release-<version>-<source_commit>`から`release-manifest.json`を取り出し、内容を変えずに`release-candidates/<version>.json`として保存する。
+2. この文書に実行記録表を追加し、ソースタグとcommit、元のrun ID、artifact IDと失効日時、manifestのパス、公開操作用タグを記録する。
 
-1. その実行の`release-manifest.json`を、内容を変えず`release-candidates/0.1.1.json`として保存する。
-2. `verify-promotion`と`pypi`が参照するrun ID・artifact ID・manifest・版を、その候補に更新する。元runの成功、`check-testpypi`の成功、元commitの一致を検査する条件も更新する。
-3. 手動実行を許可するタグを`v0.1.1-publish.1`へ更新する。`pypi` environmentの本人承認は維持する。
-4. 変更をmainへ取り込み、そのcommitに公開操作用タグ`v0.1.1-publish.1`を付ける。ソースタグ`v0.1.1`は動かさない。
+レビュー後にPRをmainへ取り込み、そのcommitに公開操作用タグ`v<version>-publish.1`を付けてpushする。手順4では、このタグのワークフローとmanifestを使う。
 
-`v*-publish.*`のタグpushではTestPyPIへの再送信は起きない。公開操作用タグは候補を照合・送信するワークフローの版を固定するためのものであり、配布物のソースcommitを変更するものではない。
+artifactはTestPyPIのrunから30日後に失効する（`prepare-release.yml`の`retention-days: 30`）。承認とPyPIへの送信は失効前に済ませる。期限が過ぎた場合は、新しいリリース候補を用意してTestPyPIでの検証からやり直す。
 
 ### 4. 本人の承認を経てPyPIへ公開する
 
+`<version>`には`0.1.3`のような公開対象の版を、`<run id>`には手順3で記録したTestPyPIのrun IDを入れて実行する。
+
 ```bash
-gh workflow run publish.yml --ref v0.1.1-publish.1
+gh workflow run publish.yml --ref 'v<version>-publish.1' -f version='<version>' -f run_id='<run id>'
 ```
 
-この操作は手順3の変更を取り込んだ後に行う。候補の照合に成功すると`pypi` jobが承認待ちになる。本人が対象版・元commit・配布物のSHA256・TestPyPIの結果を確認し、GitHubのReview deploymentsで承認すると、本番への送信が始まる。
+`verify-promotion`は対象版と公開操作用タグを照合し、元のrunのソースタグ・commitとTestPyPIの検証結果を確認する。版とcommitからartifactを特定し、同梱のmanifestをPRで確認したmanifestと照合する。wheel・sdistと、TestPyPIから再取得したwheelのSHA256がmanifestに一致すると、`pypi` jobが承認待ちになる。
 
-PyPIで公開したwheel・sdistのSHA256はmanifestと一致した。英語の説明と日本語版へのリンクを確認し、公開日をCHANGELOGに記録した。[PyPIの0.1.1](https://pypi.org/project/django-ninja-ulid/0.1.1/)
+本人は実行のsummaryで対象版、元のrunへのリンク、artifactの失効日時、manifestのcommitとSHA256を確認し、GitHubのReview deploymentsで承認する。承認後、`pypi` jobは同じrunから同じIDのartifactを再取得し、manifestと配布物をもう一度照合してからwheelとsdistをPyPIへ送信する。
+
+## 過去のリリース記録
 
 ### 0.1.2のTestPyPI検証記録
 
@@ -90,6 +92,8 @@ PyPIで公開したwheel・sdistのSHA256はmanifestと一致した。英語の�
 [TestPyPIの0.1.1](https://test.pypi.org/project/django-ninja-ulid/0.1.1/)で、wheel・sdistのSHA256と英語の説明本文が候補に一致することを確認した。日本語READMEのsdistへの同梱、ORMあり・なしの通常インストールも確認済みである。
 
 本番公開では、上記artifactから同じwheel・sdistを取得する。公開操作のソースから再ビルドしない。artifactが期限切れ・削除済みの場合や、元run・manifest・SHA256が一致しない場合は停止する。本番への送信には`pypi` environmentで本人の承認が必要になる。
+
+PyPIで公開したwheel・sdistのSHA256はmanifestと一致した。英語の説明と日本語版へのリンクを確認し、公開日をCHANGELOGに記録した。[PyPIの0.1.1](https://pypi.org/project/django-ninja-ulid/0.1.1/)
 
 ## 現在実行できる準備
 
@@ -132,9 +136,9 @@ Actionsの成果物は`release-<version>-<commit>`の名前で30日間保存し�
 
 ## TestPyPIへの公開
 
-[Publish](../.github/workflows/publish.yml)は`v*`タグのpushで起動する。タグは配布版と一致させる（`0.1.0`の場合は`v0.1.0`）。CIの成功後にPrepare releaseで配布物を一度だけ作り、TestPyPIへ送信する。取得したwheelのSHA256をmanifestと照合し、新規Djangoプロジェクトで動作を確認する。
+[Publish](../.github/workflows/publish.yml)は`v*-publish.*`を除く`v*`タグのpushで起動する。タグは配布版と一致させる（`0.1.0`の場合は`v0.1.0`）。CIの成功後にPrepare releaseで配布物を一度だけ作り、TestPyPIへ送信する。取得したwheelのSHA256をmanifestと照合し、新規Djangoプロジェクトで動作を確認する。
 
-`testpypi` environmentとTrusted PublisherによるOIDC認証を使う。`id-token: write`は送信jobだけに与える。通常のリリースタグでは本番へ送信しない。本番公開は以下の手動操作で行う。
+`testpypi` environmentとTrusted PublisherによるOIDC認証を使う。`id-token: write`は送信jobだけに与える。通常のリリースタグでは本番へ送信しない。本番公開は手順3と4に従う。
 
 構文検査は次のとおり。
 
@@ -154,7 +158,7 @@ TestPyPIからの検証では、依存を通常のPyPIからロックどおり�
 
 ## 0.1.0の本番公開記録（旧手順）
 
-以下は公開済み`0.1.0`の記録である。`0.1.1`の公開には上記の手順を使った。次の版も、上記の`0.1.1`の手順に沿って公開する。
+以下は公開済み`0.1.0`で使った手順の記録である。
 
 TestPyPIの実行[39173153474](https://github.com/nibuno/django-ninja-ulid/actions/runs/39173153474)で確認したartifact ID `12152919501`を使う。[固定したmanifest](../release-candidates/0.1.0.json)に、配布元commitとwheel・sdistのSHA256を記録した。
 
