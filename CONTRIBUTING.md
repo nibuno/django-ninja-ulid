@@ -31,6 +31,22 @@ Python・Django・DBの全組み合わせを確認する手順は[対応環境](
 
 実データ、認証情報、接続先の秘密情報は含めず、再現用の値へ置き換えます。
 
+## ブランチ名とコミットメッセージ
+
+ブランチ名は`<type>/<内容>`とします。`<内容>`は短い英語のkebab-caseで書きます。`nibuno/`や`codex/`など、ツールが付ける接頭辞は付けません。
+
+| type | 用途 | 例 |
+|---|---|---|
+| `feat` | 機能の追加 | `feat/input-schema-helper` |
+| `fix` | 不具合の修正 | `fix/mti-fk-target` |
+| `docs` | 文書だけの変更 | `docs/record-0.1.1-release` |
+| `test` | テストだけの変更 | `test/upstream-marker` |
+| `ci` | CIやワークフローの変更 | `ci/add-type-check` |
+| `chore` | 依存の更新やリリース準備 | `chore/widen-dependency-ranges` |
+| `refactor` | 挙動を変えない整理 | `refactor/orm-target-resolution` |
+
+コミットメッセージは`fix: ...`のように、同じtypeを先頭に付けます（[Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/)）。
+
 ## 変更時の確認
 
 - 公開APIの変更には、受け入れる入力・出力と変更理由を示す。
