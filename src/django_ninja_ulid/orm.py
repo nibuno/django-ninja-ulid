@@ -52,6 +52,8 @@ def _ulid_target(field: models.Field) -> models.Field:
         )
 
     target = field.related_model._meta.pk
+    while isinstance(target, models.OneToOneField) and target.remote_field.parent_link:
+        target = target.target_field
     if isinstance(target, models.CompositePrimaryKey):
         raise ValueError(f"{field.name}: composite primary keys are not supported")
     return target
