@@ -362,11 +362,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "django", specifier = ">=5.2.18,!=6.0.*,!=6.1.0,!=6.1.1,<6.2" },
-    { name = "django-ninja", specifier = "==1.7.1" },
-    { name = "pydantic", specifier = "==2.13.5" },
-    { name = "python-ulid", extras = ["pydantic"], specifier = "==4.0.1" },
-    { name = "python-ulid-django", marker = "extra == 'orm'", specifier = "==1.6.0" },
+    { name = "django", specifier = ">=5.2.18,!=6.1.0,!=6.1.1,<6.2" },
+    { name = "django-ninja", specifier = ">=1.7.1,<2" },
+    { name = "pydantic", specifier = ">=2.13.5,<3" },
+    { name = "python-ulid", extras = ["pydantic"], specifier = ">=4.0.1,<5" },
+    { name = "python-ulid-django", marker = "extra == 'orm'", specifier = ">=1.6.0,<2" },
 ]
 provides-extras = ["orm"]
 
