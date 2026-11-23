@@ -9,6 +9,8 @@ uv sync --locked --extra orm
 uv run --locked --extra orm pytest -q
 ```
 
+`upstream`マーカーを付けたテストは、`uv.lock`で固定した依存ライブラリの挙動を記録する。別のバージョンで本ライブラリを検証するときは、`pytest -m "not upstream"`を実行する。更新後に`upstream`のテストだけが失敗した場合は、依存先の挙動の変更として扱い、READMEの該当箇所を更新する。
+
 配布物を作って検査する場合は、次を実行します。
 
 ```bash
@@ -39,6 +41,22 @@ uv run --locked mypy
 - `by_alias`、関連の定義、`fields`、prefetchの有無。
 
 実データ、認証情報、接続先の秘密情報は含めず、再現用の値へ置き換えます。
+
+## ブランチ名とコミットメッセージ
+
+ブランチ名は`<type>/<内容>`とします。`<内容>`は短い英語のkebab-caseで書きます。`nibuno/`や`codex/`など、ツールが付ける接頭辞は付けません。
+
+| type | 用途 | 例 |
+|---|---|---|
+| `feat` | 機能の追加 | `feat/input-schema-helper` |
+| `fix` | 不具合の修正 | `fix/mti-fk-target` |
+| `docs` | 文書だけの変更 | `docs/record-0.1.1-release` |
+| `test` | テストだけの変更 | `test/upstream-marker` |
+| `ci` | CIやワークフローの変更 | `ci/add-type-check` |
+| `chore` | 依存の更新やリリース準備 | `chore/widen-dependency-ranges` |
+| `refactor` | 挙動を変えない整理 | `refactor/orm-target-resolution` |
+
+コミットメッセージは`fix: ...`のように、同じtypeを先頭に付けます（[Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/)）。
 
 ## 変更時の確認
 

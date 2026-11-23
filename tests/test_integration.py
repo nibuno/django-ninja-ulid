@@ -17,23 +17,27 @@ def post_id(http, mode, value):
     )
 
 
+@pytest.mark.upstream
 def test_model_schema_maps_ulid_to_uuid():
     assert UUID in AutoItem.model_fields["id"].annotation.__args__
     assert UUID in AutoItem.model_fields["owner"].annotation.__args__
 
 
+@pytest.mark.upstream
 def test_auto_schema_rejects_valid_ulid_input(http, ulid_text):
     response = post_id(http, "auto", ulid_text)
     assert response.status_code == 422
     assert response.json()["detail"][0]["type"] == "uuid_parsing"
 
 
+@pytest.mark.upstream
 def test_auto_response_fails_on_real_ulid_model(http, item):
     response = http.get(f"/api/auto/items/{item.pk}")
     assert response.status_code == 500
     assert response.exc_info[0] is ValidationError
 
 
+@pytest.mark.upstream
 def test_manual_raw_ulid_response_fails_json_encoding(http, item):
     response = http.get(f"/api/manual/items/{item.pk}")
     assert response.status_code == 500
@@ -51,6 +55,7 @@ def test_manual_fixed_schema_serializes_ulid_relations(http, item):
     assert body["public_uuid"] == str(item.public_uuid)
 
 
+@pytest.mark.upstream
 def test_raw_explicit_ulid_fails_json_encoding(http, ulid_text):
     response = post_id(http, "raw", ulid_text)
     assert response.status_code == 500
@@ -64,6 +69,7 @@ def test_adapter_ulid_round_trip(http, ulid_text):
     assert response.json()["id"] == ulid_text
 
 
+@pytest.mark.upstream
 @pytest.mark.parametrize("value", [None, {}, [], -1])
 def test_raw_ulid_wrong_json_types_raise_500(http, value):
     response = post_id(http, "raw", value)
@@ -71,6 +77,7 @@ def test_raw_ulid_wrong_json_types_raise_500(http, value):
     assert response.exc_info[0] in (TypeError, OverflowError)
 
 
+@pytest.mark.upstream
 def test_raw_ulid_validation_accepts_numeric_id():
     payload = RawEcho.model_validate({"id": 42})
     assert str(payload.id) == "0000000000000000000000001A"
@@ -162,6 +169,7 @@ def test_openapi_distinguishes_ulid_and_uuid():
     assert adapted["public_uuid"]["format"] == "uuid"
 
 
+@pytest.mark.upstream
 def test_raw_ulid_openapi_advertises_binary_alternative():
     alternatives = RawEcho.model_json_schema()["properties"]["id"]["anyOf"]
     assert any(value.get("format") == "binary" for value in alternatives)

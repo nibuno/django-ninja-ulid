@@ -6,11 +6,11 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.test.utils import isolate_apps
 from django.utils.translation import gettext_lazy as _
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 from ulid import ULID
 from ulid_django.models import ULIDField
 
-from poc.adapter import create_ulid_response_schema
+from poc.adapter import ApiULID, create_ulid_response_schema
 from poc.api import api
 from poc.models import Item
 from poc.schemas import AdaptedItem
@@ -41,6 +41,18 @@ def schema_models():
             class Meta:
                 app_label = "poc"
 
+        class Child(Reference):
+            class Meta:
+                app_label = "poc"
+
+        class Grandchild(Child):
+            class Meta:
+                app_label = "poc"
+
+        class IntegerChild(IntegerReference):
+            class Meta:
+                app_label = "poc"
+
         class UUIDReference(models.Model):
             key = models.UUIDField(primary_key=True)
 
@@ -64,6 +76,9 @@ def schema_models():
             integer_owner = models.ForeignKey(IntegerReference, on_delete=models.CASCADE)
             uuid_owner = models.ForeignKey(UUIDReference, on_delete=models.CASCADE)
             tags = models.ManyToManyField(Reference, blank=True, related_name="tagged_subjects")
+            child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name="+")
+            grandchildren = models.ManyToManyField(Grandchild, related_name="+")
+            integer_child = models.ForeignKey(IntegerChild, on_delete=models.CASCADE, related_name="+")
             owner_by_code = models.ForeignKey(Reference, to_field="code", related_name="coded_subjects", on_delete=models.CASCADE)
             owner_by_ulid = models.ForeignKey(IntegerReference, to_field="external_id", related_name="ulid_subjects", on_delete=models.CASCADE)
             integer_by_code = models.ForeignKey(IntegerReference, to_field="code", related_name="coded_subjects", on_delete=models.CASCADE)
@@ -81,7 +96,9 @@ def schema_models():
             class Meta:
                 app_label = "poc"
 
-        yield SimpleNamespace(subject=Subject, reference=Reference, composite=CompositeSubject, calls=calls)
+        yield SimpleNamespace(
+            subject=Subject, reference=Reference, grandchild=Grandchild, composite=CompositeSubject, calls=calls,
+        )
 
 
 @pytest.mark.parametrize("fields", [[], None])
@@ -196,6 +213,36 @@ def test_uuid_and_integer_fk_types_are_unchanged(schema_models):
     assert fields["uuid_owner"]["format"] == "uuid"
 
 
+def test_fk_to_mti_child_serializes_ulid(schema_models):
+    schema = create_ulid_response_schema(schema_models.subject, name="ChildFKResponse", fields=["child"])
+    instance = schema_models.subject(child_id=ULID.from_str(SAMPLE))
+    assert schema.from_orm(instance).model_dump(mode="json", by_alias=True) == {"child_id": SAMPLE}
+    field = schema.model_json_schema()["properties"]["child_id"]
+    assert field["type"] == "string"
+    assert field["pattern"] == TypeAdapter(ApiULID).json_schema()["pattern"]
+
+
+def test_m2m_to_mti_grandchild_serializes_ulids(schema_models):
+    schema = create_ulid_response_schema(schema_models.subject, name="GrandchildM2MResponse", fields=["grandchildren"])
+    field = schema.model_json_schema()["properties"]["grandchildren"]
+    assert field["type"] == "array"
+    assert field["items"] == TypeAdapter(ApiULID).json_schema()
+    grandchild = schema_models.grandchild(pk=ULID.from_str(SAMPLE))
+    assert schema.model_validate({"grandchildren": [grandchild]}).model_dump(mode="json") == {"grandchildren": [SAMPLE]}
+
+
+def test_fk_to_mti_child_with_integer_pk_keeps_integer_type(schema_models):
+    schema = create_ulid_response_schema(schema_models.subject, name="IntegerChildFKResponse", fields=["integer_child"])
+    assert schema.model_json_schema()["properties"]["integer_child_id"]["type"] == "integer"
+    instance = schema_models.subject(integer_child_id=42)
+    assert schema.from_orm(instance).model_dump(mode="json", by_alias=True) == {"integer_child_id": 42}
+
+
+def test_direct_mti_parent_link_is_rejected(schema_models):
+    with pytest.raises(ValueError, match="child_ptr: OneToOneField is not supported"):
+        create_ulid_response_schema(schema_models.grandchild, name="ParentLinkResponse", fields=["child_ptr"])
+
+
 def test_prefetched_response_does_not_fetch_owner_or_repeat_m2m_query(item, django_assert_num_queries):
     with django_assert_num_queries(0):
         result = AdaptedItem.model_validate(item).model_dump()
@@ -247,6 +294,7 @@ def test_explicit_modelschema_overrides_handle_real_relations(http, item):
     assert response.json() == http.get(f"/api/adapted/items/{item.pk}").json()
 
 
+@pytest.mark.upstream
 @pytest.mark.parametrize("order", [(False, True), (True, False)])
 def test_ninja_171_shares_component_between_mixed_alias_modes(order):
     """Record why the PoC gives the two alias modes separate schema names."""
@@ -260,6 +308,7 @@ def test_ninja_171_shares_component_between_mixed_alias_modes(order):
     assert observed["documented_properties"] == {"plain": expected, "aliased": expected}
 
 
+@pytest.mark.upstream
 def test_single_mode_serialization_alias_matches_openapi():
     from alias_cases import observe_serialization_alias
 
