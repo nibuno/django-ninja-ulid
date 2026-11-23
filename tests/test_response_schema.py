@@ -12,7 +12,7 @@ from ulid_django.models import ULIDField
 
 from poc.adapter import ApiULID, create_ulid_response_schema
 from poc.api import api
-from poc.models import Item
+from poc.models import Collection, CollectionItem, Item, Owner
 from poc.schemas import AdaptedItem
 
 SAMPLE = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -212,6 +212,31 @@ def test_uuid_and_integer_fk_types_are_unchanged(schema_models):
     fields = schema.model_json_schema(by_alias=False)["properties"]
     assert fields["integer_owner"]["type"] == "integer"
     assert fields["uuid_owner"]["format"] == "uuid"
+
+
+def test_self_fk_serializes_parent_ulid():
+    schema = create_ulid_response_schema(Item, name="ItemParentResponse", fields=["parent"])
+    child = Item(parent_id=ULID.from_str(SAMPLE))
+    assert schema.model_validate(child).model_dump(mode="json") == {"parent": SAMPLE}
+
+
+def test_m2m_with_explicit_through_model_serializes_target_ulids(db):
+    schema = create_ulid_response_schema(Collection, name="CollectionItemsResponse", fields=["items"])
+    collection = Collection.objects.create()
+    item = Item.objects.create(name="featured")
+    CollectionItem.objects.create(collection=collection, item=item, position=1)
+    assert schema.model_validate(collection).model_dump(mode="json") == {"items": [str(item.pk)]}
+
+
+def test_m2m_to_integer_pk_preserves_integer_items(db):
+    schema = create_ulid_response_schema(Owner, name="OwnerCollectionsResponse", fields=["collections"])
+    owner = Owner.objects.create(name="owner")
+    collection = Collection.objects.create()
+    owner.collections.add(collection)
+    assert schema.model_validate(owner).model_dump(mode="json") == {"collections": [collection.pk]}
+    field = schema.model_json_schema(mode="serialization")["properties"]["collections"]
+    assert field["type"] == "array"
+    assert field["items"]["type"] == "integer"
 
 
 def test_fk_to_mti_child_serializes_ulid(schema_models):

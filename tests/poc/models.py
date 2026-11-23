@@ -8,6 +8,7 @@ from ulid_django.models import ULIDField
 class Owner(models.Model):
     id = ULIDField(primary_key=True, default=ULID, editable=False)
     name = models.CharField(max_length=80)
+    collections = models.ManyToManyField("Collection")
 
 
 class Tag(models.Model):
@@ -21,3 +22,14 @@ class Item(models.Model):
     name = models.CharField(max_length=80)
     owner = models.ForeignKey(Owner, null=True, blank=True, on_delete=models.SET_NULL)
     tags = models.ManyToManyField(Tag, blank=True)
+    parent = models.ForeignKey("self", null=True, on_delete=models.SET_NULL)
+
+
+class Collection(models.Model):
+    items = models.ManyToManyField(Item, through="CollectionItem")
+
+
+class CollectionItem(models.Model):
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    position = models.PositiveIntegerField()

@@ -29,6 +29,11 @@ class ApiEcho(Schema):
     id: ApiULID
 
 
+class Filters(Schema):
+    owner: ApiULID
+    tag: ApiULID
+
+
 class CreateItem(Schema):
     name: str
     owner: ApiULID | None = None
