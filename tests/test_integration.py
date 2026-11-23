@@ -6,9 +6,30 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 from ulid import ULID
 
+from poc.adapter import ApiULID
 from poc.api import api
 from poc.models import Item
 from poc.schemas import AdaptedItem, AutoItem, RawEcho
+
+SAMPLE = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+INVALID_ULIDS = [
+    (123, "ulid_type", None),
+    (None, "ulid_type", None),
+    ({}, "ulid_type", None),
+    ([], "ulid_type", None),
+    (-1, "ulid_type", None),
+    (True, "ulid_type", None),
+    ("short", "ulid_length", {"actual_length": 5}),
+    (SAMPLE[:-1], "ulid_length", {"actual_length": 25}),
+    (SAMPLE + "0", "ulid_length", {"actual_length": 27}),
+    (SAMPLE + "\n", "ulid_length", {"actual_length": 27}),
+    (f" {SAMPLE} ", "ulid_length", {"actual_length": 28}),
+    (SAMPLE[:-1] + "\n", "ulid_parsing", None),
+    (SAMPLE[:-1] + "I", "ulid_parsing", None),
+    (SAMPLE[:-1] + "\N{LATIN SMALL LETTER LONG S}", "ulid_parsing", None),
+    ("8" + "Z" * 25, "ulid_parsing", None),
+    ("Z" * 26, "ulid_parsing", None),
+]
 
 
 def post_id(http, mode, value):
@@ -63,10 +84,11 @@ def test_raw_explicit_ulid_fails_json_encoding(http, ulid_text):
     assert "not JSON serializable" in str(response.exc_info[1])
 
 
-def test_adapter_ulid_round_trip(http, ulid_text):
-    response = post_id(http, "adapted", ulid_text)
+@pytest.mark.parametrize("value", [SAMPLE, SAMPLE.lower()])
+def test_adapter_ulid_round_trip(http, value):
+    response = post_id(http, "adapted", value)
     assert response.status_code == 200
-    assert response.json()["id"] == ulid_text
+    assert response.json()["id"] == SAMPLE
 
 
 @pytest.mark.upstream
@@ -83,11 +105,23 @@ def test_raw_ulid_validation_accepts_numeric_id():
     assert str(payload.id) == "0000000000000000000000001A"
 
 
-@pytest.mark.parametrize("value", [None, {}, [], -1, 42, True, "short", "I" * 26, "Z" * 26])
-def test_adapter_rejects_invalid_input_with_422(http, value):
+@pytest.mark.parametrize("value, error_type, ctx", INVALID_ULIDS)
+def test_adapter_validation_errors(value, error_type, ctx):
+    with pytest.raises(ValidationError) as error:
+        TypeAdapter(ApiULID).validate_python(value)
+    detail = error.value.errors()[0]
+    assert detail["type"] == error_type
+    assert detail.get("ctx") == ctx
+
+
+@pytest.mark.parametrize("value, error_type, ctx", INVALID_ULIDS)
+def test_adapter_rejects_invalid_input_with_422(http, value, error_type, ctx):
     response = post_id(http, "adapted", value)
     assert response.status_code == 422
-    assert response.json()["detail"][0]["loc"] == ["body", "payload", "id"]
+    detail = response.json()["detail"][0]
+    assert detail["loc"] == ["body", "payload", "id"]
+    assert detail["type"] == error_type
+    assert detail.get("ctx") == ctx
 
 
 def test_path_parameter_round_trip(http, ulid_text):
@@ -185,8 +219,6 @@ def test_openapi_pattern_matches_accepted_lowercase_input(ulid_text):
 
 
 def test_ulid_instances_and_canonical_output(item):
-    from poc.adapter import ApiULID
-
     adapter = TypeAdapter(ApiULID)
     assert adapter.validate_python(item.pk) == item.pk
     assert adapter.dump_json(item.pk).decode() == json.dumps(str(item.pk))

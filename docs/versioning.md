@@ -11,7 +11,11 @@ from django_ninja_ulid import ApiULID
 from django_ninja_ulid.orm import create_ulid_response_schema, related_ids
 ```
 
-対象は、READMEに記載した入力形式・正規化・出力形式、必須・null・省略、関連ID、拒否する設定と例外型、公開関数の引数である。検証エラーの文章全体、内部の補助関数、定数は固定しない。`__all__`に含めない名前へ直接アクセスできても、公開APIとしては扱わない。
+対象は、READMEに記載した入力形式・正規化・出力形式、必須・null・省略、関連ID、拒否する設定と例外型、公開関数の引数である。
+
+`ApiULID`の検証エラーの`type`（`ulid_type`、`ulid_length`、`ulid_parsing`）も公開仕様に含め、同じマイナー版内では固定する。エラーメッセージの文面は変わることがある。
+
+内部の補助関数と定数は固定しない。`__all__`に含めない名前へ直接アクセスできても、公開APIとしては扱わない。
 
 ## 0.xでの変更の分類
 

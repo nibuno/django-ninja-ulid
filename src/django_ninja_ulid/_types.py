@@ -4,21 +4,30 @@ import re
 from typing import Annotated, Any
 
 from pydantic import BeforeValidator, PlainSerializer, WithJsonSchema
+from pydantic_core import PydanticCustomError
 from ulid import ULID
 
-_ULID_PATTERN = "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
 _ULID_INPUT_PATTERN = "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
 
 
 def _parse_api_ulid(value: Any) -> ULID:
     if isinstance(value, ULID):
         return value
-    if not isinstance(value, str) or not value.isascii():
-        raise ValueError("ULID must be a 26-character ASCII string")
-    canonical = value.upper()
-    if re.fullmatch(_ULID_PATTERN, canonical) is None:
-        raise ValueError("ULID must contain 26 Base32 characters and start with 0–7")
-    return ULID.from_str(canonical)
+    if not isinstance(value, str):
+        raise PydanticCustomError("ulid_type", "ULID must be a string")
+    length = len(value)
+    if length != 26:
+        raise PydanticCustomError(
+            "ulid_length",
+            "ULID must be 26 characters long (got {actual_length})",
+            {"actual_length": length},
+        )
+    if re.fullmatch(_ULID_INPUT_PATTERN, value) is None:
+        raise PydanticCustomError(
+            "ulid_parsing",
+            "ULID must use Crockford Base32 and start with a digit from 0 to 7",
+        )
+    return ULID.from_str(value.upper())
 
 
 ApiULID = Annotated[

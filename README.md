@@ -219,6 +219,27 @@ After adding `tags` to the model, declare `tags: RelatedULIDs` alongside `id` an
 - Python validation also accepts existing `ulid.ULID` instances. Validated attributes are `ULID` objects; serialization, including `model_dump()`, produces uppercase strings.
 - Invalid request input produces HTTP 422 in Ninja. Direct Pydantic validation raises `ValidationError`.
 
+Each entry in Ninja's `detail` or Pydantic's `ValidationError.errors()` identifies the cause in its `type` field.
+
+| `type` | Cause |
+|---|---|
+| `ulid_type` | A value other than a string or a Python `ulid.ULID` instance. |
+| `ulid_length` | A string shorter or longer than 26 characters. `ctx.actual_length` gives the character count. |
+| `ulid_parsing` | A 26-character string with a character outside the ASCII Crockford Base32 alphabet or a first character outside `0`–`7`. |
+
+For example, posting a 25-character `id` to `/api/echo` returns HTTP 422 with this body.
+
+```json
+{
+  "detail": [{
+    "type": "ulid_length",
+    "loc": ["body", "payload", "id"],
+    "msg": "ULID must be 26 characters long (got 25)",
+    "ctx": {"actual_length": 25}
+  }]
+}
+```
+
 You can use the type without configuring Django:
 
 ```python

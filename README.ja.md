@@ -219,6 +219,27 @@ RelatedULIDs = Annotated[list[ApiULID], BeforeValidator(related_ids)]
 - Python上では、既存の`ulid.ULID`インスタンスも受け付けます。検証後の属性値は`ULID`オブジェクトで、`model_dump()`を含む出力処理では大文字の文字列になります。
 - Ninjaの入力検証では、不正値に対してHTTP 422を返します。Pydanticから直接検証する場合は`ValidationError`になります。
 
+Ninjaの`detail`とPydanticの`ValidationError.errors()`では、各エラーの`type`で原因を判別できます。
+
+| `type` | 原因 |
+|---|---|
+| `ulid_type` | 文字列またはPythonの`ulid.ULID`インスタンス以外の値を指定した。 |
+| `ulid_length` | 文字列が26文字より短いか長い。`ctx.actual_length`に実際の文字数が入る。 |
+| `ulid_parsing` | 26文字の文字列にCrockford Base32で使えない文字が含まれるか、先頭が`0`〜`7`の範囲外。 |
+
+たとえば、`/api/echo`に25文字の`id`を送ると、HTTP 422で次の応答が返ります。
+
+```json
+{
+  "detail": [{
+    "type": "ulid_length",
+    "loc": ["body", "payload", "id"],
+    "msg": "ULID must be 26 characters long (got 25)",
+    "ctx": {"actual_length": 25}
+  }]
+}
+```
+
 Djangoの設定なしでも、次のように使えます。
 
 ```python
