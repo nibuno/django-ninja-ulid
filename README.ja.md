@@ -263,12 +263,12 @@ OpenAPIには次の制限があります。
 | Python | 3.12 / 3.13 / 3.14 |
 | Django | 5.2.18 / 6.0.10 / 6.1.3 |
 | DB | SQLite / PostgreSQL 18.6 |
-| Django Ninja | 1.7.1 / 1.8.0 |
-| Pydantic | 2.13.5 / 2.14.4 |
-| python-ulid | 4.0.1 / 4.2.0 |
-| python-ulid-django | 1.6.0 |
+| Django Ninja | 1.7.1と1.x系の最新版 |
+| Pydantic | 2.13.5と2.x系の最新版 |
+| python-ulid | 4.0.1と4.x系の最新版 |
+| python-ulid-django | 1.6.0と1.x系の最新版 |
 
-CIでは、Python・Django・DBの組み合わせのうち、プルリクエストで代表的な4通りを検証します。`main`へのpush、手動実行、週次実行、リリース時には全18通りを検証します。これに加え、SQLiteで依存範囲の下限版をPython 3.12、範囲内の最新版をPython 3.14で検証します。詳しくは[対応環境と検証方法](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)を参照してください。
+CIでは、Python・Django・DBの組み合わせのうち、プルリクエストで代表的な4通りを検証します。`main`へのpush、手動実行、週次実行、リリース時には全18通りを検証します。これに加え、SQLiteで依存範囲の下限版をPython 3.12、範囲内の最新版をPython 3.14で検証します。最新版の検証は週に1回以上行います。詳しくは[対応環境と検証方法](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)を参照してください。
 
 ## バージョンの方針と開発への参加
 

@@ -263,12 +263,12 @@ Two known OpenAPI limitations:
 | Python | 3.12 / 3.13 / 3.14 |
 | Django | 5.2.18 / 6.0.10 / 6.1.3 |
 | Databases | SQLite / PostgreSQL 18.6 |
-| Django Ninja | 1.7.1 / 1.8.0 |
-| Pydantic | 2.13.5 / 2.14.4 |
-| python-ulid | 4.0.1 / 4.2.0 |
-| python-ulid-django | 1.6.0 |
+| Django Ninja | 1.7.1 and the latest 1.x |
+| Pydantic | 2.13.5 and the latest 2.x |
+| python-ulid | 4.0.1 and the latest 4.x |
+| python-ulid-django | 1.6.0 and the latest 1.x |
 
-CI runs four representative Python, Django, and database combinations on pull requests. Pushes to `main`, manual runs, weekly runs, and releases cover all 18. Two additional SQLite jobs test the lowest compatible dependencies on Python 3.12 and the latest compatible dependencies on Python 3.14. See [compatibility and verification details (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md).
+CI runs four representative Python, Django, and database combinations on pull requests. Pushes to `main`, manual runs, weekly runs, and releases cover all 18. Two additional SQLite jobs test the lowest compatible dependencies on Python 3.12 and the latest compatible releases on Python 3.14, so the latest releases are checked at least weekly. See [compatibility and verification details (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md).
 
 ## Versioning and contributing
 
