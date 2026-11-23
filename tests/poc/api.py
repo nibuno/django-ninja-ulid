@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from ninja import NinjaAPI, Status
+from ninja import NinjaAPI, Query, Status
 from ulid import ULID
 
 from .adapter import ApiULID
@@ -12,6 +12,7 @@ from .schemas import (
     AutoItem,
     CreateItem,
     ExplicitItem,
+    Filters,
     ManualFixedItem,
     ManualItem,
     RawEcho,
@@ -48,6 +49,16 @@ def adapted_path(request, item_id: ApiULID):
 @api.get("/adapted/query", response=ApiEcho)
 def adapted_query(request, item_id: ApiULID):
     return {"id": item_id}
+
+
+@api.get("/adapted/query-list", response=list[str])
+def adapted_query_list(request, ids: Query[list[ApiULID]]):
+    return [str(item_id) for item_id in ids]
+
+
+@api.get("/adapted/query-filters", response=Filters)
+def adapted_query_filters(request, filters: Query[Filters]):
+    return filters
 
 
 def find_item(item_id):

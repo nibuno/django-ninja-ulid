@@ -1,4 +1,6 @@
 import json
+import random
+import re
 from uuid import UUID
 
 import pytest
@@ -12,6 +14,7 @@ from poc.models import Item
 from poc.schemas import AdaptedItem, AutoItem, RawEcho
 
 SAMPLE = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+MAX_ULID = "7" + "Z" * 25
 INPUT_PATTERN = "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
 OUTPUT_PATTERN = "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
 INVALID_ULIDS = [
@@ -25,10 +28,14 @@ INVALID_ULIDS = [
     (SAMPLE[:-1], "ulid_length", {"actual_length": 25}),
     (SAMPLE + "0", "ulid_length", {"actual_length": 27}),
     (SAMPLE + "\n", "ulid_length", {"actual_length": 27}),
+    (" " + SAMPLE, "ulid_length", {"actual_length": 27}),
+    (SAMPLE + " ", "ulid_length", {"actual_length": 27}),
     (f" {SAMPLE} ", "ulid_length", {"actual_length": 28}),
     (SAMPLE[:-1] + "\n", "ulid_parsing", None),
     (SAMPLE[:-1] + "I", "ulid_parsing", None),
     (SAMPLE[:-1] + "\N{LATIN SMALL LETTER LONG S}", "ulid_parsing", None),
+    ("\N{FULLWIDTH DIGIT ZERO}" + SAMPLE[1:], "ulid_parsing", None),
+    (SAMPLE[:-1] + "\N{FULLWIDTH LATIN CAPITAL LETTER V}", "ulid_parsing", None),
     ("8" + "Z" * 25, "ulid_parsing", None),
     ("Z" * 26, "ulid_parsing", None),
 ]
@@ -111,13 +118,37 @@ def test_raw_ulid_validation_accepts_numeric_id():
     assert str(payload.id) == "0000000000000000000000001A"
 
 
-@pytest.mark.parametrize("value, error_type, ctx", INVALID_ULIDS)
+@pytest.mark.parametrize(
+    "value, error_type, ctx",
+    [*INVALID_ULIDS, (SAMPLE.encode("ascii"), "ulid_type", None), (UUID(int=1), "ulid_type", None)],
+)
 def test_adapter_validation_errors(value, error_type, ctx):
     with pytest.raises(ValidationError) as error:
         TypeAdapter(ApiULID).validate_python(value)
     detail = error.value.errors()[0]
     assert detail["type"] == error_type
     assert detail.get("ctx") == ctx
+
+
+def test_adapter_matches_input_pattern_and_round_trips():
+    rng = random.Random(14)
+    crockford = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+    # Weight the alphabet to sample both valid strings and single-character near misses.
+    alphabet = (crockford + crockford.lower()) * 4 + "ILOUilou０Ａſ"
+    pattern = re.compile(INPUT_PATTERN)
+    adapter = TypeAdapter(ApiULID)
+
+    for _ in range(4096):
+        value = "".join(rng.choices(alphabet, k=26))
+        try:
+            validated = adapter.validate_python(value)
+        except ValidationError as error:
+            assert pattern.fullmatch(value) is None, value
+            assert error.errors()[0]["type"] == "ulid_parsing", value
+        else:
+            assert pattern.fullmatch(value) is not None, value
+            assert isinstance(validated, ULID)
+            assert str(validated) == value.upper() == str(ULID.from_str(value.upper()))
 
 
 @pytest.mark.parametrize("value, error_type, ctx", INVALID_ULIDS)
@@ -153,6 +184,37 @@ def test_adapter_rejects_bad_query_and_path(http, location):
     else:
         response = http.get("/api/adapted/query", {"item_id": "invalid"})
     assert response.status_code == 422
+
+
+def test_list_query_preserves_repeated_ids_in_order(http):
+    response = http.get("/api/adapted/query-list", {"ids": [MAX_ULID.lower(), SAMPLE.lower(), MAX_ULID.lower()]})
+    assert response.status_code == 200
+    assert response.json() == [MAX_ULID, SAMPLE, MAX_ULID]
+
+
+@pytest.mark.parametrize(
+    "invalid, error_type", [("short", "ulid_length"), ("8" + SAMPLE[1:], "ulid_parsing")],
+)
+def test_list_query_reports_invalid_element(http, invalid, error_type):
+    response = http.get("/api/adapted/query-list", {"ids": [SAMPLE, invalid]})
+    assert response.status_code == 422
+    detail = response.json()["detail"][0]
+    assert detail["loc"] == ["query", "ids", 1]
+    assert detail["type"] == error_type
+
+
+def test_query_schema_parses_ulid_fields(http):
+    response = http.get("/api/adapted/query-filters", {"owner": SAMPLE.lower(), "tag": MAX_ULID.lower()})
+    assert response.status_code == 200
+    assert response.json() == {"owner": SAMPLE, "tag": MAX_ULID}
+
+
+def test_query_schema_reports_invalid_field(http):
+    response = http.get("/api/adapted/query-filters", {"owner": SAMPLE, "tag": SAMPLE[:-1] + "I"})
+    assert response.status_code == 422
+    detail = response.json()["detail"][0]
+    assert detail["loc"] == ["query", "tag"]
+    assert detail["type"] == "ulid_parsing"
 
 
 def test_adapter_serializes_pk_fk_m2m_and_preserves_uuid(http, item):
