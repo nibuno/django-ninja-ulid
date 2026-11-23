@@ -29,7 +29,7 @@ This alpha release supports Python 3.12–3.14 and the dependency ranges below. 
 
 | Dependency | Version constraint |
 |---|---|
-| Django | `>=5.2.18,<6.2,!=6.1.0,!=6.1.1` |
+| Django | 5.2.18 or later and below 6.2 (except 6.1.0 and 6.1.1) |
 | Django Ninja | `>=1.7.1,<2` |
 | Pydantic | `>=2.13.5,<3` |
 | python-ulid | `>=4.0.1,<5` |
@@ -110,7 +110,7 @@ class Item(models.Model):
     owner = models.ForeignKey(Owner, null=True, on_delete=models.SET_NULL)
 ```
 
-Replace `catalog/api.py` from the quick start with this version. Keep the same URL configuration. Import `django_ninja_ulid.orm` after Django has initialized, such as from your app's API module loaded by the URL configuration.
+Replace `catalog/api.py` from the quick start with this version. Keep the same URL configuration.
 
 ```python
 # catalog/api.py
@@ -161,7 +161,7 @@ If an owner is assigned, `owner` contains its ULID string. The foreign key is re
 
 ### Many-to-many relations
 
-For a `Tag` model with a ULID primary key, add `tags = models.ManyToManyField(Tag)` to `Item`, run migrations, and include `"tags"` in `ItemOut`'s `fields`. The response contains a list of ULID strings, or `[]` when no tags are assigned.
+In `catalog/models.py`, define `Tag` before `Item` and give it the same ULID primary-key field as `Owner`. Add `tags = models.ManyToManyField(Tag)` to `Item`, run migrations, and include `"tags"` in `ItemOut`'s `fields`. The response contains a list of ULID strings, or `[]` when no tags are assigned.
 
 Replace the detail endpoint's lookup with `get_object_or_404(Item.objects.prefetch_related("tags"), pk=item_id)`. For lists of items, use `prefetch_related("tags")` on the queryset to avoid a separate tag query for each item. The schema helper does not optimize queries automatically.
 
@@ -171,6 +171,63 @@ Replace the detail endpoint's lookup with `get_object_or_404(Item.objects.prefet
 | ULIDField or ULID foreign key with `null=True` | Key is always included; value may be null |
 | Many-to-many relation to a ULID primary key | Key is always included; list may be empty, never null |
 | Non-ULID field | Ninja's usual behavior |
+
+## Request schemas
+
+Define create and PATCH request bodies with Ninja's `Schema`. For the `Item` model above, add this create endpoint to `catalog/api.py`, using the `ItemOut` response schema that includes `tags`.
+
+```python
+from django.db import transaction
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+from ninja import Schema, Status
+from pydantic import Field
+
+from django_ninja_ulid import ApiULID
+
+from .models import Item, Owner, Tag
+
+
+class CreateItem(Schema):
+    name: str = Field(max_length=100)
+    owner: ApiULID | None = None
+    tags: list[ApiULID] = Field(default_factory=list)
+
+
+@api.post("/items", response={201: ItemOut})
+@transaction.atomic
+def create_item(request, payload: CreateItem):
+    owner = get_object_or_404(Owner, pk=payload.owner) if payload.owner is not None else None
+    tags = Tag.objects.in_bulk(payload.tags)
+    if any(tag_id not in tags for tag_id in payload.tags):
+        raise Http404("Tag not found")
+    item = Item.objects.create(name=payload.name, owner=owner)
+    item.tags.set(tags.values())
+    return Status(201, item)
+```
+
+Send this JSON body to `POST /api/items`, using IDs from your own `Owner` and `Tag` rows. The view returns the saved item with HTTP 201, or HTTP 404 if a referenced row is missing.
+
+```json
+{
+  "name": "Desk",
+  "owner": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "tags": ["01ARZ3NDEKTSV4RRFFQ69G5FAW"]
+}
+```
+
+You can omit `owner` or send `null` for an item without an owner. Omitting `tags` gives the item an empty tag list. In a PATCH view, check `"owner" in payload.model_fields_set` to distinguish an explicit `null` from an omitted field.
+
+For a list of item IDs in a query string, use `Query[list[ApiULID]]`. Repeat the `ids` parameter for each ID, as in `GET /api/items?ids=01arz3ndektsv4rrffq69g5fax&ids=01arz3ndektsv4rrffq69g5fay`.
+
+```python
+from ninja import Query
+
+
+@api.get("/items", response=list[ItemOut])
+def list_items(request, ids: Query[list[ApiULID]]):
+    return Item.objects.filter(pk__in=ids).prefetch_related("tags")
+```
 
 ## Hand-written schemas
 
@@ -195,7 +252,7 @@ class ManualItemOut(ModelSchema):
         fields = ["public_uuid", "name"]
 ```
 
-For many-to-many fields, `related_ids` converts a Manager, QuerySet, or list of model instances into a list of primary keys. Place this definition before `ManualItemOut` in the same module, loaded after Django initialization through your API module:
+For many-to-many fields, `related_ids` converts a Manager, QuerySet, or list of model instances into a list of primary keys. Place this definition before `ManualItemOut` in the same module.
 
 ```python
 # catalog/schemas.py (before ManualItemOut)
@@ -254,6 +311,27 @@ assert isinstance(value, ULID)
 assert adapter.dump_python(value) == "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 ```
 
+## Troubleshooting
+
+Importing `django_ninja_ulid.orm` loads Ninja's settings. With the `orm` extra installed and no Django settings configured, `python -c "import django_ninja_ulid.orm"` raises a Pydantic `ValidationError` in Ninja 1.7.1. Its first error includes `ImproperlyConfigured: Requested setting NINJA_PAGINATION_CLASS, but settings are not configured.`
+
+If `DJANGO_SETTINGS_MODULE` is set but you import your app's models before `django.setup()`, Django raises `django.core.exceptions.AppRegistryNotReady: Apps aren't loaded yet.`
+
+In a Django project, put the ORM imports in the API module that your URL configuration loads. In a standalone script, initialize Django before importing helpers or models. Use your project's settings module in place of `config.settings`.
+
+```python
+import os
+
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+
+from django_ninja_ulid.orm import create_ulid_response_schema
+
+from catalog.models import Item
+```
+
 ## Why not plain ModelSchema?
 
 We tested plain schemas with Django Ninja 1.7.1 and python-ulid 4.0.1.
@@ -268,7 +346,7 @@ Error responses can change with dependency updates. Posting `{"id": {}}` to an e
 
 ## Scope and limitations
 
-`create_ulid_response_schema` generates flat **response** schemas for `python-ulid-django` fields. It does not generate request or PATCH schemas, nested responses, or schemas for other ULID field libraries.
+`create_ulid_response_schema` generates flat **response** schemas for `python-ulid-django` fields. Nested responses and other ULID field libraries are outside its scope. For create and PATCH endpoints, see [Request schemas](#request-schemas).
 
 An empty `fields` list, a foreign key targeting a non-primary-key `to_field`, reverse relations, `OneToOneField`, and composite primary keys raise `ValueError` when the schema is created.
 
@@ -295,7 +373,7 @@ CI runs four representative Python, Django, and database combinations on pull re
 
 The public API consists of `ApiULID`, `create_ulid_response_schema`, and `related_ids`. During 0.x, breaking changes use a minor release (for example, 0.1 → 0.2); compatible fixes use a patch release.
 
-- [Changelog (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)
+- [Changelog (English and Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)
 - [Versioning policy (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/versioning.md)
 - [Development and bug reports (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/CONTRIBUTING.md)
 - [Report an issue](https://github.com/nibuno/django-ninja-ulid/issues)
