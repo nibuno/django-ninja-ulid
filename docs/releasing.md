@@ -137,7 +137,7 @@ TestPyPIからの検証では、依存を通常のPyPIからロックどおり�
 
 ## 0.1.0の本番公開記録（旧手順）
 
-以下は公開済み`0.1.0`の記録である。`0.1.1`の公開には上記の手順を使った。
+以下は公開済み`0.1.0`の記録である。`0.1.1`の公開には上記の手順を使った。次の版も、上記の`0.1.1`の手順に沿って公開する。
 
 TestPyPIの実行[39173153474](https://github.com/nibuno/django-ninja-ulid/actions/runs/39173153474)で確認したartifact ID `12152919501`を使う。[固定したmanifest](../release-candidates/0.1.0.json)に、配布元commitとwheel・sdistのSHA256を記録した。
 
