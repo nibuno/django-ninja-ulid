@@ -8,6 +8,13 @@ from pydantic_core import PydanticCustomError
 from ulid import ULID
 
 _ULID_INPUT_PATTERN = "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+_ULID_INPUT_SCHEMA = {
+    "type": "string",
+    "minLength": 26,
+    "maxLength": 26,
+    "pattern": _ULID_INPUT_PATTERN,
+    "examples": ["01ARZ3NDEKTSV4RRFFQ69G5FAV"],
+}
 
 
 def _parse_api_ulid(value: Any) -> ULID:
@@ -34,13 +41,5 @@ ApiULID = Annotated[
     ULID,
     BeforeValidator(_parse_api_ulid),
     PlainSerializer(str, return_type=str, when_used="always"),
-    WithJsonSchema(
-        {
-            "type": "string",
-            "minLength": 26,
-            "maxLength": 26,
-            "pattern": _ULID_INPUT_PATTERN,
-            "examples": ["01ARZ3NDEKTSV4RRFFQ69G5FAV"],
-        }
-    ),
+    WithJsonSchema(_ULID_INPUT_SCHEMA),
 ]

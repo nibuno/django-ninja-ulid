@@ -16,6 +16,7 @@ from poc.models import Item
 from poc.schemas import AdaptedItem
 
 SAMPLE = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+OUTPUT_PATTERN = "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
 
 
 @pytest.fixture
@@ -217,16 +218,18 @@ def test_fk_to_mti_child_serializes_ulid(schema_models):
     schema = create_ulid_response_schema(schema_models.subject, name="ChildFKResponse", fields=["child"])
     instance = schema_models.subject(child_id=ULID.from_str(SAMPLE))
     assert schema.from_orm(instance).model_dump(mode="json", by_alias=True) == {"child_id": SAMPLE}
-    field = schema.model_json_schema()["properties"]["child_id"]
+    field = schema.model_json_schema(mode="serialization")["properties"]["child_id"]
     assert field["type"] == "string"
-    assert field["pattern"] == TypeAdapter(ApiULID).json_schema()["pattern"]
+    assert field["pattern"] == OUTPUT_PATTERN
 
 
 def test_m2m_to_mti_grandchild_serializes_ulids(schema_models):
     schema = create_ulid_response_schema(schema_models.subject, name="GrandchildM2MResponse", fields=["grandchildren"])
-    field = schema.model_json_schema()["properties"]["grandchildren"]
+    input_items = schema.model_json_schema(mode="validation")["properties"]["grandchildren"]["items"]
+    assert input_items == TypeAdapter(ApiULID).json_schema()
+    field = schema.model_json_schema(mode="serialization")["properties"]["grandchildren"]
     assert field["type"] == "array"
-    assert field["items"] == TypeAdapter(ApiULID).json_schema()
+    assert field["items"] == {**input_items, "pattern": OUTPUT_PATTERN}
     grandchild = schema_models.grandchild(pk=ULID.from_str(SAMPLE))
     assert schema.model_validate({"grandchildren": [grandchild]}).model_dump(mode="json") == {"grandchildren": [SAMPLE]}
 

@@ -275,7 +275,7 @@ Django Ninja 1.7.1とpython-ulid 4.0.1の組み合わせで、`ModelSchema`と�
 OpenAPIには次の制限があります。
 
 - Ninja 1.7.1では、同じSchemaを`by_alias`の設定が異なるルートで使い回すと、共有するOpenAPIのフィールド名が最後に登録したルートの設定になります。HTTPの応答は正しく返ります。出力形式ごとに、異なる`name`でSchemaを作成してください。
-- OpenAPIの文字パターンは入力と応答の両方で小文字を許可していますが、実際の出力は常に大文字です。
+- `create_ulid_response_schema`が生成する応答Schemaの`pattern`は、関連先IDのリストを含め、ULIDの英字を大文字に限定します。Ninja 1.7.1と1.8.0では、入力と応答に同じSchemaクラスを使うとOpenAPIのコンポーネントが1つになるため、手書きSchemaの`ApiULID`では両方の`pattern`で小文字も許可します。どちらのSchemaでも、実際に返すULIDは大文字です。
 
 ## 動作確認済みの環境
 
