@@ -9,6 +9,8 @@ uv sync --locked --extra orm
 uv run --locked --extra orm pytest -q
 ```
 
+`upstream`マーカーを付けたテストは、`uv.lock`で固定した依存ライブラリの挙動を記録する。別のバージョンで本ライブラリを検証するときは、`pytest -m "not upstream"`を実行する。更新後に`upstream`のテストだけが失敗した場合は、依存先の挙動の変更として扱い、READMEの該当箇所を更新する。
+
 配布物を作って検査する場合は、次を実行します。
 
 ```bash

@@ -294,6 +294,7 @@ def test_explicit_modelschema_overrides_handle_real_relations(http, item):
     assert response.json() == http.get(f"/api/adapted/items/{item.pk}").json()
 
 
+@pytest.mark.upstream
 @pytest.mark.parametrize("order", [(False, True), (True, False)])
 def test_ninja_171_shares_component_between_mixed_alias_modes(order):
     """Record why the PoC gives the two alias modes separate schema names."""
@@ -307,6 +308,7 @@ def test_ninja_171_shares_component_between_mixed_alias_modes(order):
     assert observed["documented_properties"] == {"plain": expected, "aliased": expected}
 
 
+@pytest.mark.upstream
 def test_single_mode_serialization_alias_matches_openapi():
     from alias_cases import observe_serialization_alias
 

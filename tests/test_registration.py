@@ -7,6 +7,8 @@ from ulid import ULID
 
 from poc.models import Item
 
+pytestmark = pytest.mark.upstream
+
 
 def test_global_uuid_mapping_also_changes_ordinary_uuid():
     original = TYPES["UUIDField"]

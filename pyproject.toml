@@ -77,4 +77,5 @@ default = true
 DJANGO_SETTINGS_MODULE = "poc.settings"
 pythonpath = ["tests"]
 testpaths = ["tests"]
+markers = ["upstream: records behavior of the pinned dependency versions"]
 addopts = "-ra"
