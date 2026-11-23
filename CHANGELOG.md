@@ -1,5 +1,9 @@
 # Changelog
 
+## 未公開
+
+- `ApiULID`の検証エラーの`type`を、原因に応じて`ulid_type`（入力の型）、`ulid_length`（文字数）、`ulid_parsing`（文字列の形式）に変更。`value_error`でULIDの入力エラーを判定しているクライアントは、新しい3つの値に切り替えてください。
+
 ## 0.1.2 — 2026-11-23
 
 ### 修正
