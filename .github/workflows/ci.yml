@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 0 * * 1"
   workflow_dispatch:
   workflow_call:
 
@@ -35,6 +37,56 @@ jobs:
       - run: uv sync --locked --extra orm
       - run: uv run --locked ruff check .
       - run: uv run --locked mypy
+
+  dependency-bounds:
+    name: ${{ matrix.bound }} dependencies / Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - bound: lowest
+            python: "3.12"
+            resolution: lowest-direct
+          - bound: highest
+            python: "3.14"
+            resolution: highest
+    env:
+      ULID_TEST_DATABASE: sqlite
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.7"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv build --wheel --python python
+      - name: Install the wheel and resolve its dependencies
+        env:
+          RESOLUTION: ${{ matrix.resolution }}
+        run: |
+          uv venv --python python
+          uv export --locked --only-group dev --no-hashes --no-annotate |
+            grep -E '^pytest(-django)?==' > "$RUNNER_TEMP/pytest.txt"
+          wheel=(dist/*.whl)
+          # lowest-direct needs the library's requirements as direct inputs.
+          uv pip install --python .venv/bin/python --resolution "$RESOLUTION" \
+            -r pyproject.toml --extra orm "${wheel[0]}[orm]" -r "$RUNNER_TEMP/pytest.txt"
+          uv pip list --python .venv/bin/python
+      - name: Run all tests
+        if: matrix.bound == 'lowest'
+        run: .venv/bin/python -m pytest -q
+      - name: Run library tests
+        if: matrix.bound == 'highest'
+        run: .venv/bin/python -m pytest -q -m "not upstream"
 
   matrix:
     runs-on: ubuntu-latest
