@@ -25,15 +25,15 @@ pip install django-ninja-ulid
 pip install "django-ninja-ulid[orm]"
 ```
 
-Python 3.12–3.14 is required. This is an alpha package with dependencies pinned to tested versions:
+This alpha release supports Python 3.12–3.14 and the dependency ranges below. See [Compatibility](#compatibility) for the tested versions.
 
 | Dependency | Version constraint |
 |---|---|
-| Django | `>=5.2.18,<6.2`, excluding `6.0.*`, `6.1.0`, and `6.1.1` |
-| Django Ninja | `==1.7.1` |
-| Pydantic | `==2.13.5` |
-| python-ulid | `==4.0.1` |
-| python-ulid-django | `==1.6.0` (with `orm`) |
+| Django | `>=5.2.18,<6.2,!=6.1.0,!=6.1.1` |
+| Django Ninja | `>=1.7.1,<2` |
+| Pydantic | `>=2.13.5,<3` |
+| python-ulid | `>=4.0.1,<5` |
+| python-ulid-django | `>=1.6.0,<2` (with `orm`) |
 
 Check these constraints against your project's dependencies before installing. The base installation includes Django and Ninja; importing `ApiULID` does not load them or require Django settings. The `orm` extra adds `python-ulid-django`.
 
@@ -192,7 +192,7 @@ class ManualItemOut(ModelSchema):
 
     class Meta:
         model = Item
-        fields = ["id", "public_uuid", "name", "owner"]
+        fields = ["public_uuid", "name"]
 ```
 
 For many-to-many fields, `related_ids` converts a Manager, QuerySet, or list of model instances into a list of primary keys. Place this definition before `ManualItemOut` in the same module, loaded after Django initialization through your API module:
@@ -209,7 +209,7 @@ from django_ninja_ulid.orm import related_ids
 RelatedULIDs = Annotated[list[ApiULID], BeforeValidator(related_ids)]
 ```
 
-After adding `tags` to the model, declare `tags: RelatedULIDs` inside your `ModelSchema` and include `"tags"` in `Meta.fields`.
+After adding `tags` to the model, declare `tags: RelatedULIDs` alongside `id` and `owner` in `ManualItemOut`. List only the fields Ninja should infer from the model (`public_uuid` and `name`) in `Meta.fields`.
 
 ## Validation and serialization
 
@@ -235,11 +235,13 @@ assert adapter.dump_python(value) == "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 
 ## Why not plain ModelSchema?
 
-With the pinned dependencies:
+We tested plain schemas with Django Ninja 1.7.1 and python-ulid 4.0.1.
 
 - `ULIDField` inherits from `UUIDField`, so Ninja infers a UUID type. A 26-character ULID request value fails UUID validation with HTTP 422; a model response containing a ULID fails response validation with HTTP 500.
 - Declaring the raw `ulid.ULID` type in a hand-written schema avoids UUID inference, but its output can fail JSON encoding with a `TypeError` and HTTP 500.
 - Registering a global replacement with `register_field("UUIDField", ...)` also changes ordinary UUID fields.
+
+Error responses can change with dependency updates. Posting `{"id": {}}` to an endpoint that declares `id: ulid.ULID` returns HTTP 500 with python-ulid 4.0.1 and HTTP 422 with 4.2.0.
 
 `ApiULID` handles validation and serialization explicitly. `create_ulid_response_schema` applies it only to the selected ULID fields and relations.
 
@@ -256,11 +258,17 @@ Two known OpenAPI limitations:
 
 ## Compatibility
 
-| Python | Tested Django versions | Databases |
-|---|---|---|
-| 3.12 / 3.13 / 3.14 | 5.2.18 / 6.1.2 | SQLite / PostgreSQL 18.6 |
+| Component | Tested versions |
+|---|---|
+| Python | 3.12 / 3.13 / 3.14 |
+| Django | 5.2.18 / 6.0.10 / 6.1.3 |
+| Databases | SQLite / PostgreSQL 18.6 |
+| Django Ninja | 1.7.1 and the latest 1.x |
+| Pydantic | 2.13.5 and the latest 2.x |
+| python-ulid | 4.0.1 and the latest 4.x |
+| python-ulid-django | 1.6.0 and the latest 1.x |
 
-CI covers four representative combinations on pull requests and all 12 on pushes to `main`, manual runs, and releases. The Django dependency range also permits later patch versions within 5.2 and 6.1; those are not automatically covered by this tested-version table. See [compatibility and verification details (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md).
+CI runs four representative Python, Django, and database combinations on pull requests. Pushes to `main`, manual runs, weekly runs, and releases cover all 18. Two additional SQLite jobs test the lowest compatible dependencies on Python 3.12 and the latest compatible releases on Python 3.14, so the latest releases are checked at least weekly. See [compatibility and verification details (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md).
 
 ## Versioning and contributing
 

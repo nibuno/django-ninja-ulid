@@ -64,7 +64,7 @@ class ExplicitItem(ModelSchema):
 
     class Meta:
         model = Item
-        fields = ["id", "public_uuid", "name", "owner", "tags"]
+        fields = ["public_uuid", "name"]
 
 
 AdaptedItem = create_ulid_response_schema(

@@ -22,14 +22,14 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "Django>=5.2.18,<6.2,!=6.0.*,!=6.1.0,!=6.1.1",
-  "django-ninja==1.7.1",
-  "pydantic==2.13.5",
-  "python-ulid[pydantic]==4.0.1",
+  "Django>=5.2.18,<6.2,!=6.1.0,!=6.1.1",
+  "django-ninja>=1.7.1,<2",
+  "pydantic>=2.13.5,<3",
+  "python-ulid[pydantic]>=4.0.1,<5",
 ]
 
 [project.optional-dependencies]
-orm = ["python-ulid-django==1.6.0"]
+orm = ["python-ulid-django>=1.6.0,<2"]
 
 [project.urls]
 Homepage = "https://github.com/nibuno/django-ninja-ulid"

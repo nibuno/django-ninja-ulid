@@ -25,15 +25,15 @@ pip install django-ninja-ulid
 pip install "django-ninja-ulid[orm]"
 ```
 
-Python 3.12〜3.14に対応しています。現在はアルファ版で、依存ライブラリを検証済みの版に固定しています。
+このアルファ版はPython 3.12〜3.14と、次の範囲の依存ライブラリに対応しています。検証した版は[動作確認済みの環境](#動作確認済みの環境)にまとめています。
 
 | 依存ライブラリ | バージョン指定 |
 |---|---|
-| Django | `>=5.2.18,<6.2`。`6.0.*`、`6.1.0`、`6.1.1`を除外 |
-| Django Ninja | `==1.7.1` |
-| Pydantic | `==2.13.5` |
-| python-ulid | `==4.0.1` |
-| python-ulid-django | `==1.6.0`（`orm` extra） |
+| Django | `>=5.2.18,<6.2,!=6.1.0,!=6.1.1` |
+| Django Ninja | `>=1.7.1,<2` |
+| Pydantic | `>=2.13.5,<3` |
+| python-ulid | `>=4.0.1,<5` |
+| python-ulid-django | `>=1.6.0,<2`（`orm` extra） |
 
 導入前に、既存プロジェクトの依存条件と合うかを確認してください。通常のインストールにもDjangoとNinjaは含まれますが、`ApiULID`のimport時には読み込まず、Djangoの設定も必要ありません。`orm` extraを指定するとpython-ulid-djangoが追加されます。
 
@@ -192,7 +192,7 @@ class ManualItemOut(ModelSchema):
 
     class Meta:
         model = Item
-        fields = ["id", "public_uuid", "name", "owner"]
+        fields = ["public_uuid", "name"]
 ```
 
 多対多のフィールドには`related_ids`を使います。Manager・QuerySet・モデルのリストを、主キーのリストに変換します。次の定義を同じモジュールの`ManualItemOut`より前に置き、Djangoの初期化後にAPIモジュールから読み込んでください。
@@ -209,7 +209,7 @@ from django_ninja_ulid.orm import related_ids
 RelatedULIDs = Annotated[list[ApiULID], BeforeValidator(related_ids)]
 ```
 
-モデルに`tags`を追加したら、`ModelSchema`内に`tags: RelatedULIDs`を定義し、`Meta.fields`にも`"tags"`を含めてください。
+モデルに`tags`を追加したら、`ManualItemOut`の`id`、`owner`と並べて`tags: RelatedULIDs`を宣言します。`Meta.fields`には、Ninjaがモデルから型を推論するフィールド（この例では`public_uuid`と`name`）だけを指定します。
 
 ## 検証と文字列化
 
@@ -235,11 +235,13 @@ assert adapter.dump_python(value) == "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 
 ## ModelSchemaだけでは扱えない理由
 
-固定した依存バージョンでは、次の問題が起きます。
+Django Ninja 1.7.1とpython-ulid 4.0.1の組み合わせで、`ModelSchema`と手書きのSchemaの挙動を確認しました。
 
 - `ULIDField`は`UUIDField`を継承しているため、NinjaはUUID型として扱います。26文字のULIDを入力するとUUIDの検証でHTTP 422になり、ULIDを持つモデルを返すと応答の検証でHTTP 500になります。
 - 手書きのSchemaで`ulid.ULID`型を直接指定するとUUIDの型推論は避けられますが、JSON変換時に`TypeError`が発生し、HTTP 500になる場合があります。
 - `register_field("UUIDField", ...)`で全体の型を差し替えると、通常のUUIDフィールドも変更されます。
+
+依存ライブラリの版によって、エラー時の応答は変わります。たとえば、`id: ulid.ULID`と宣言したエンドポイントに`{"id": {}}`を送ると、python-ulid 4.0.1ではHTTP 500、4.2.0ではHTTP 422が返ります。
 
 `ApiULID`は検証と文字列化を明示的に行います。`create_ulid_response_schema`は、選択したULIDフィールドと関連だけにこの型を適用します。
 
@@ -256,11 +258,17 @@ OpenAPIには次の制限があります。
 
 ## 動作確認済みの環境
 
-| Python | 検証したDjangoの版 | DB |
-|---|---|---|
-| 3.12 / 3.13 / 3.14 | 5.2.18 / 6.1.2 | SQLite / PostgreSQL 18.6 |
+| 検証対象 | 検証した版 |
+|---|---|
+| Python | 3.12 / 3.13 / 3.14 |
+| Django | 5.2.18 / 6.0.10 / 6.1.3 |
+| DB | SQLite / PostgreSQL 18.6 |
+| Django Ninja | 1.7.1と1.x系の最新版 |
+| Pydantic | 2.13.5と2.x系の最新版 |
+| python-ulid | 4.0.1と4.x系の最新版 |
+| python-ulid-django | 1.6.0と1.x系の最新版 |
 
-CIでは、プルリクエストで代表的な4通りを検証し、`main`へのpush、手動実行、リリース時には全12通りを検証します。Djangoの依存指定は5.2系・6.1系の後続パッチ版も許可しますが、インストール可能な版すべてを検証したわけではありません。詳しくは[対応環境と検証方法](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)を参照してください。
+CIでは、Python・Django・DBの組み合わせのうち、プルリクエストで代表的な4通りを検証します。`main`へのpush、手動実行、週次実行、リリース時には全18通りを検証します。これに加え、SQLiteで依存範囲の下限版をPython 3.12、範囲内の最新版をPython 3.14で検証します。最新版の検証は週に1回以上行います。詳しくは[対応環境と検証方法](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)を参照してください。
 
 ## バージョンの方針と開発への参加
 

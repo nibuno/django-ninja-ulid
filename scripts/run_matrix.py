@@ -31,8 +31,18 @@ def main():
         parser.error(f"Build the current version before running the matrix: {wheel.name}")
     records = []
     prepared = {}
-    locked = tomllib.loads((root / "uv.lock").read_text())
-    driver_version = next(item["version"] for item in locked["package"] if item["name"] == "psycopg")
+    # The full suite records upstream behavior at the locked versions. Only Django varies.
+    constraints = destination / "constraints.txt"
+    subprocess.run(
+        [
+            args.uv, "export", "--locked", "--extra", "orm", "--no-hashes",
+            "--no-emit-project", "--no-emit-package", "django",
+            "--output-file", str(constraints),
+        ],
+        cwd=root,
+        stdout=subprocess.DEVNULL,
+        check=True,
+    )
 
     for case in cases():
         key = f"py{case['python']}-django{case['django']}"
@@ -63,8 +73,8 @@ def main():
                     run([args.uv, "venv", "--python", interpreter, str(env_path)])
                 python = str(env_path / "bin/python")
                 run([args.uv, "pip", "install", "--reinstall-package", "django-ninja-ulid", "--default-index", "https://pypi.org/simple", "--python", python,
-                     str(wheel) + "[orm]", f"Django=={case['django']}",
-                     "pytest==9.1.1", "pytest-django==4.14.0", f"psycopg[binary]=={driver_version}"])
+                     "--constraints", str(constraints), str(wheel) + "[orm]", f"Django=={case['django']}",
+                     "pytest", "pytest-django", "psycopg[binary]"])
                 run([args.uv, "pip", "check", "--python", python])
                 prepared[key] = python
                 if case["database"] == "sqlite":

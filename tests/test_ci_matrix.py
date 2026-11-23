@@ -15,7 +15,7 @@ CONFIG = json.loads((ROOT / "ci-matrix.json").read_text())
 
 def test_full_matrix_covers_all_supported_combinations():
     full = ci_matrix.cases()
-    assert len(full) == 12
+    assert len(full) == 18
     assert full == [
         {
             "python": python,

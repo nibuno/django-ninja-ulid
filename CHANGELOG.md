@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Django Ninja、Pydantic、python-ulid、python-ulid-djangoの依存指定を広げ、同じメジャー版内の更新に対応。
+- Django 6.0系に対応し、CIの検証対象に6.0.10を追加。6.1系の検証対象を6.1.3に更新。
+- 英語版・日本語版READMEの手書きSchemaの例を修正。明示したフィールドを`Meta.fields`から外し、Django Ninja 1.8.0での非推奨警告を解消。
 - マルチテーブル継承でULID主キーを引き継いだ子モデルを参照すると、応答Schemaが`ForeignKey`や`ManyToManyField`の関連先IDを整数として扱う不具合を修正。
 
 ## 0.1.1 — 2026-10-20
