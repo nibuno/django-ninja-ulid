@@ -40,7 +40,7 @@ Changelog = "https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
-  "pytest==9.1.1",
+  "pytest==9.2.0",
   "pytest-django==4.14.0",
   "psycopg[binary]>=3.2,<4",
   "build",
