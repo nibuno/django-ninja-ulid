@@ -1,14 +1,20 @@
 # Changelog
 
-## Unreleased / 未公開
+## 0.2.0 — 2026-11-23
+
+### Breaking changes / 互換性のない変更
 
 - `ApiULID` now reports the cause of a validation error in `type`. Clients that checked for `value_error` should handle `ulid_type` for invalid types, `ulid_length` for incorrect string lengths, and `ulid_parsing` for malformed strings.
 
   `ApiULID`の検証エラーの`type`を、原因に応じて`ulid_type`（入力の型）、`ulid_length`（文字数）、`ulid_parsing`（文字列の形式）に変更。`value_error`でULIDの入力エラーを判定しているクライアントは、新しい3つの値に切り替えてください。
 
+### Changes / 変更
+
 - `create_ulid_response_schema` now emits an uppercase-only ULID `pattern` in the response JSON Schema, including for lists of related IDs. In hand-written schemas, the request and response patterns for `ApiULID` still allow lowercase.
 
   `create_ulid_response_schema`の応答用JSON Schemaで、ULIDの`pattern`を大文字限定に変更。関連先IDのリストにも適用します。手書きSchemaの`ApiULID`では、入力と応答のパターンで引き続き小文字も許可します。
+
+### Documentation / 文書
 
 - Documented how to create an item with owner and tag IDs, filter items by multiple IDs, and initialize Django before importing the ORM helpers. Added English translations to the changelog.
 
