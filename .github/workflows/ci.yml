@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
   workflow_call:
@@ -28,7 +29,7 @@ jobs:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.7.8"
+          version: "0.13.7"
           enable-cache: true
           cache-dependency-glob: uv.lock
       - run: uv sync --locked --extra orm
@@ -44,7 +45,7 @@ jobs:
         with:
           persist-credentials: false
       - id: cases
-        run: python3 scripts/ci_matrix.py --github-output
+        run: python3 scripts/ci_matrix.py --github-output --subset ${{ github.event_name == 'pull_request' && 'pr' || 'full' }}
 
   test:
     needs: matrix
@@ -53,11 +54,10 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 4
       matrix: ${{ fromJSON(needs.matrix.outputs.cases) }}
     services:
       postgres:
-        image: ${{ matrix.postgres_image }}
+        image: ${{ matrix.database == 'postgresql' && matrix.postgres_image || '' }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -86,7 +86,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.7.8"
+          version: "0.13.7"
           enable-cache: true
           cache-dependency-glob: uv.lock
       - name: Install locked build and test tools
