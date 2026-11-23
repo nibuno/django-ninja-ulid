@@ -5,8 +5,8 @@ import importlib.metadata
 import importlib.util
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 
 def main():
@@ -24,9 +24,11 @@ def main():
 
     import django_ninja_ulid
     from django_ninja_ulid import ApiULID
-    from pydantic import TypeAdapter, ValidationError
 
     assert Path(django_ninja_ulid.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
+
+    from pydantic import TypeAdapter, ValidationError
+
     adapter = TypeAdapter(ApiULID)
     text = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
     value = adapter.validate_python(text.lower())

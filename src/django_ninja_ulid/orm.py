@@ -77,6 +77,7 @@ def create_ulid_response_schema(
         ulid_field = _ulid_target(field)
         if not isinstance(ulid_field, ULIDField):
             continue
+        annotation: Any
         if field.many_to_many:
             annotation = Annotated[list[ApiULID], BeforeValidator(related_ids)]
         else:

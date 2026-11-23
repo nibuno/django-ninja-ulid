@@ -1,16 +1,15 @@
 """Inspect release files without uploading them or importing package code."""
 
 import argparse
-from email.parser import BytesParser
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import tarfile
 import tomllib
 import zipfile
-
+from email.parser import BytesParser
+from pathlib import Path
 
 NAME = "django-ninja-ulid"
 STEM = "django_ninja_ulid"

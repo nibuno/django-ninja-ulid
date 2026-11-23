@@ -8,7 +8,7 @@ from ulid import ULID
 
 from poc.api import api
 from poc.models import Item
-from poc.schemas import AdaptedItem, AutoItem, ManualItem, RawEcho
+from poc.schemas import AdaptedItem, AutoItem, RawEcho
 
 
 def post_id(http, mode, value):

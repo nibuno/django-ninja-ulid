@@ -20,6 +20,15 @@ uv run --locked --extra orm twine check dist/*
 
 Python・Django・DBの全組み合わせを確認する手順は[対応環境](docs/compatibility.md)にあります。DBの実験にはテスト専用のサーバーを使います。配布物は[リリース手順](docs/releasing.md)で作成し、ソースからの利用と通常インストールの両方を確認します。
 
+## リントと型チェック
+
+Ruffでリポジトリ内のPythonコードを検査します。mypyでは、`src/`の実装と公開APIの利用例（`tests/typing/check_public_api.py`）を型チェックします。
+
+```bash
+uv run --locked ruff check .
+uv run --locked mypy
+```
+
 ## 不具合報告に添える情報
 
 不具合は、[このリポジトリのIssues](https://github.com/nibuno/django-ninja-ulid/issues)へ次の情報を添えて報告してください。
