@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- マルチテーブル継承でULID主キーを引き継いだ子モデルを参照すると、応答Schemaが`ForeignKey`や`ManyToManyField`の関連先IDを整数として扱う不具合を修正。
+
 ## 0.1.1 — 2026-10-20
 
 - READMEとPyPIの説明本文を英語に整理し、日本語版を`README.ja.md`として追加。
