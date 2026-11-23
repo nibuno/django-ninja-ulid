@@ -1,6 +1,6 @@
 # リリースの準備と公開手順
 
-更新日：2026-11-23。`0.1.1`を2026-10-20にPyPIへ公開した。本番PyPIには、TestPyPIで検証した配布物を手動実行とenvironmentの承認を経て送信する。
+更新日：2026-11-23。`0.1.1`を2026-10-20にPyPIへ公開した。`0.1.2`はTestPyPIでの検証を終え、本番公開の承認待ちである。本番PyPIには、TestPyPIで検証した配布物を手動実行とenvironmentの承認を経て送信する。
 
 ## 0.1.1の準備と公開の順序
 
@@ -36,7 +36,7 @@ PRブランチでも同じワークフローを実行できる。その結果は
 
 ### 3. 検証した候補を本番公開用に固定する
 
-現在の`publish.yml`の手動公開経路は、下記の実行記録にある`0.1.1`の検証済み候補に固定している。`v0.1.1`タグをpushしただけでは、本番PyPIには公開されない。
+現在の`publish.yml`の手動公開経路は、下記の実行記録にある`0.1.2`の検証済み候補に固定している。`v0.1.2`タグをpushしただけでは、本番PyPIには公開されない。
 
 候補を固定するときは、TestPyPI検証の成功後に次の変更を別のPRで確認する。run ID・artifact ID・SHA256は成功した実行から取得し、事前に仮の値を設定しない。今回の`0.1.1`も、この手順で固定した。
 
@@ -56,6 +56,21 @@ gh workflow run publish.yml --ref v0.1.1-publish.1
 この操作は手順3の変更を取り込んだ後に行う。候補の照合に成功すると`pypi` jobが承認待ちになる。本人が対象版・元commit・配布物のSHA256・TestPyPIの結果を確認し、GitHubのReview deploymentsで承認すると、本番への送信が始まる。
 
 PyPIで公開したwheel・sdistのSHA256はmanifestと一致した。英語の説明と日本語版へのリンクを確認し、公開日をCHANGELOGに記録した。[PyPIの0.1.1](https://pypi.org/project/django-ninja-ulid/0.1.1/)
+
+### 0.1.2のTestPyPI検証記録
+
+2026-11-23に[Publish run 45099085870](https://github.com/nibuno/django-ninja-ulid/actions/runs/45099085870)が成功した。18通りのCI、配布物の作成、TestPyPIへの送信、取得したwheelのSHA256照合、新規Djangoプロジェクトでの確認を完了している。
+
+| 項目 | 固定した値 |
+|---|---|
+| ソースタグ | `v0.1.2` |
+| ソースcommit | `829ec20fdaae9e13db2db953b5b7157e9352dc5b` |
+| 元のrun ID | `45099085870` |
+| artifact ID | `14783574890`（2026-12-23に失効） |
+| manifest | [release-candidates/0.1.2.json](../release-candidates/0.1.2.json) |
+| 公開操作用タグ | `v0.1.2-publish.1` |
+
+[TestPyPIの0.1.2](https://test.pypi.org/project/django-ninja-ulid/0.1.2/)から取得したwheelのSHA256が候補に一致し、依存指定と英語の説明本文（日本語版へのリンクを含む）が`pyproject.toml`・READMEと一致することを確認した。
 
 ### 0.1.1のTestPyPI検証記録
 
