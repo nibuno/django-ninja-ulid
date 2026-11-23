@@ -1,9 +1,9 @@
 import json
-import re
 from uuid import UUID
 
 import pytest
-from pydantic import TypeAdapter, ValidationError
+from ninja import NinjaAPI, Schema
+from pydantic import Json, TypeAdapter, ValidationError
 from ulid import ULID
 
 from poc.adapter import ApiULID
@@ -12,6 +12,8 @@ from poc.models import Item
 from poc.schemas import AdaptedItem, AutoItem, RawEcho
 
 SAMPLE = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+INPUT_PATTERN = "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$"
+OUTPUT_PATTERN = "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
 INVALID_ULIDS = [
     (123, "ulid_type", None),
     (None, "ulid_type", None),
@@ -36,6 +38,10 @@ def post_id(http, mode, value):
     return http.post(
         f"/api/{mode}/echo", data=json.dumps({"id": value}), content_type="application/json"
     )
+
+
+def json_component_name(body):
+    return body["content"]["application/json"]["schema"]["$ref"].rsplit("/", 1)[1]
 
 
 @pytest.mark.upstream
@@ -190,15 +196,19 @@ def test_response_adapter_does_not_generate_missing_id(item):
 
 
 def test_openapi_distinguishes_ulid_and_uuid():
-    schemas = api.get_openapi_schema()["components"]["schemas"]
+    spec = api.get_openapi_schema()
+    schemas = spec["components"]["schemas"]
     auto_id = schemas["AutoIdentity"]["properties"]["id"]
     assert any(value.get("format") == "uuid" for value in auto_id["anyOf"])
-    adapted = schemas["AdaptedItem"]["properties"]
-    for field in (adapted["id"], adapted["tags"]["items"]):
+    operation = spec["paths"]["/api/adapted/items"]["post"]
+    request = schemas[json_component_name(operation["requestBody"])]["properties"]
+    assert request["tags"]["items"]["pattern"] == INPUT_PATTERN
+    adapted = schemas[json_component_name(operation["responses"][201])]["properties"]
+    owner_id = next(option for option in adapted["owner"]["anyOf"] if option["type"] == "string")
+    for field in (adapted["id"], owner_id, adapted["tags"]["items"]):
         assert field["type"] == "string"
         assert field["minLength"] == field["maxLength"] == 26
-        assert field["pattern"].startswith("^")
-        assert field["pattern"].endswith("$")
+        assert field["pattern"] == OUTPUT_PATTERN
         assert "anyOf" not in field
     assert adapted["public_uuid"]["format"] == "uuid"
 
@@ -209,13 +219,50 @@ def test_raw_ulid_openapi_advertises_binary_alternative():
     assert any(value.get("format") == "binary" for value in alternatives)
 
 
-def test_openapi_pattern_matches_accepted_lowercase_input(ulid_text):
-    schema = api.get_openapi_schema()["components"]["schemas"]["ApiEcho"]
-    pattern = schema["properties"]["id"]["pattern"]
-    assert re.fullmatch(pattern, ulid_text)
-    assert re.fullmatch(pattern, ulid_text.lower())
-    assert re.fullmatch(pattern, "Z" * 26) is None
-    assert re.fullmatch(pattern, "I" * 26) is None
+@pytest.mark.parametrize("mode", ["validation", "serialization"])
+def test_public_adapter_advertises_permissive_pattern_in_both_modes(mode):
+    assert TypeAdapter(ApiULID).json_schema(mode=mode) == {
+        "type": "string",
+        "minLength": 26,
+        "maxLength": 26,
+        "pattern": INPUT_PATTERN,
+        "examples": [SAMPLE],
+    }
+
+
+def test_hand_written_schema_keeps_shared_request_and_response_permissive():
+    spec = api.get_openapi_schema()
+    operation = spec["paths"]["/api/adapted/echo"]["post"]
+    later_get = spec["paths"]["/api/adapted/query"]["get"]
+    schemas = spec["components"]["schemas"]
+    for body in (operation["requestBody"], operation["responses"][200], later_get["responses"][200]):
+        assert schemas[json_component_name(body)]["properties"]["id"]["pattern"] == INPUT_PATTERN
+
+
+@pytest.mark.upstream
+@pytest.mark.parametrize("later_response, field_type", [(False, "string"), (True, "integer")])
+def test_ninja_reuses_last_definition_for_shared_schema(later_response, field_type):
+    """Json[int] takes a JSON string on input and serializes to an integer."""
+
+    class Shared(Schema):
+        value: Json[int]
+
+    probe = NinjaAPI()
+
+    @probe.post("/echo", response=Shared)
+    def echo(request, payload: Shared):
+        return payload
+
+    if later_response:
+        @probe.get("/read", response=Shared)
+        def read(request):
+            return {"value": "1"}
+
+    spec = probe.get_openapi_schema(path_prefix="")
+    operation = spec["paths"]["/echo"]["post"]
+    name = json_component_name(operation["requestBody"])
+    assert json_component_name(operation["responses"][200]) == name
+    assert spec["components"]["schemas"][name]["properties"]["value"]["type"] == field_type
 
 
 def test_ulid_instances_and_canonical_output(item):

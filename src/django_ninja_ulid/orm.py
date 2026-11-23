@@ -19,11 +19,21 @@ except ModuleNotFoundError as error:
 from django.db import models
 from ninja import Schema
 from ninja.orm import create_schema
-from pydantic import BeforeValidator, Field
+from pydantic import BeforeValidator, Field, WithJsonSchema
 
-from . import ApiULID
+from ._types import _ULID_INPUT_SCHEMA, ApiULID
 
 __all__ = ["create_ulid_response_schema", "related_ids"]
+
+# Hand-written schemas can share a Ninja component with a request body.
+# Limit the uppercase pattern to the response schemas generated here.
+_ResponseULID = Annotated[
+    ApiULID,
+    WithJsonSchema(
+        {**_ULID_INPUT_SCHEMA, "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"},
+        mode="serialization",
+    ),
+]
 
 
 def related_ids(value: Any) -> Any:
@@ -81,9 +91,9 @@ def create_ulid_response_schema(
             continue
         annotation: Any
         if field.many_to_many:
-            annotation = Annotated[list[ApiULID], BeforeValidator(related_ids)]
+            annotation = Annotated[list[_ResponseULID], BeforeValidator(related_ids)]
         else:
-            annotation = ApiULID | None if field.null else ApiULID
+            annotation = _ResponseULID | None if field.null else _ResponseULID
 
         title = str(field.verbose_name)
         if title == title.lower():
