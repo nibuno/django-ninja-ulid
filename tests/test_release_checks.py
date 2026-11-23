@@ -2,12 +2,11 @@
 
 import importlib.util
 import io
-from pathlib import Path
 import tarfile
 import zipfile
+from pathlib import Path
 
 import pytest
-
 
 spec = importlib.util.spec_from_file_location(
     "release_checks", Path(__file__).resolve().parents[1] / "scripts/check_release.py"

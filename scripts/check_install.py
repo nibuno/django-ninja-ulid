@@ -7,15 +7,13 @@ named temporary PostgreSQL database is created and removed by this script.
 """
 
 import argparse
-import importlib.metadata
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import uuid
-
+from pathlib import Path
 
 MODELS = '''import uuid
 from django.db import models

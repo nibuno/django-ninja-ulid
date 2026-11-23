@@ -45,6 +45,8 @@ dev = [
   "psycopg[binary]>=3.2,<4",
   "build",
   "twine",
+  "mypy==2.4.1",
+  "ruff==0.17.6",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -79,3 +81,19 @@ pythonpath = ["tests"]
 testpaths = ["tests"]
 markers = ["upstream: records behavior of the pinned dependency versions"]
 addopts = "-ra"
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests/typing/check_public_api.py"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["django.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]

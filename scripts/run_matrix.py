@@ -7,13 +7,13 @@ script does not start, stop, or reuse any existing application database server.
 import argparse
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import time
 import tomllib
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 from ci_matrix import cases
 
@@ -45,9 +45,9 @@ def main():
         record = {**case, "status": "running", "log": str(folder / "run.log")}
         started = time.monotonic()
 
-        def run(command):
-            result = subprocess.run(command, cwd=root, env=environment, text=True, capture_output=True)
-            with (folder / "run.log").open("a") as log:
+        def run(command, *, env=environment, log_path=folder / "run.log"):
+            result = subprocess.run(command, cwd=root, env=env, text=True, capture_output=True)
+            with log_path.open("a") as log:
                 log.write(result.stdout + result.stderr)
             if result.returncode:
                 raise RuntimeError(f"Command failed ({result.returncode}): {command[0]} {command[1]}\n{result.stdout[-3000:]}\n{result.stderr[-3000:]}")
