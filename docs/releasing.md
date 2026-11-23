@@ -1,6 +1,6 @@
 # リリースの準備と公開手順
 
-更新日：2026-11-23。`0.1.1`を2026-10-20にPyPIへ公開した。`0.1.2`を2026-11-23にPyPIへ公開した。本番PyPIには、TestPyPIで検証した配布物を手動実行とenvironmentの承認を経て送信する。
+更新日：2026-11-23。`0.1.1`を2026-10-20に、`0.1.2`と`0.2.0`を2026-11-23にPyPIへ公開した。本番PyPIには、TestPyPIで検証した配布物を手動実行とenvironmentの承認を経て送信する。
 
 ## 準備と公開の順序
 
@@ -73,6 +73,8 @@ gh workflow run publish.yml --ref 'v<version>-publish.1' -f version='<version>' 
 | 公開操作用タグ | `v0.2.0-publish.1` |
 
 [TestPyPIの0.2.0](https://test.pypi.org/project/django-ninja-ulid/0.2.0/)のwheel・sdistのSHA256が候補に一致することを確認した。
+
+2026-11-23に[Publish run 45115359555](https://github.com/nibuno/django-ninja-ulid/actions/runs/45115359555)で`pypi` environmentの承認を経て本番へ送信した。入力`version`・`run_id`で候補を特定する手順（#19）を初めて使った。承認は本人の明示的な依頼により、本人のアカウント権限でAPIから行った。[PyPIの0.2.0](https://pypi.org/project/django-ninja-ulid/0.2.0/)のwheel・sdistのSHA256はmanifestと一致し、PyPIから新しい環境へ入れて検証エラーの`type`を確認した。
 
 ### 0.1.2のTestPyPI検証記録
 
