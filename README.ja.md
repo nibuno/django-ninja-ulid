@@ -29,7 +29,7 @@ pip install "django-ninja-ulid[orm]"
 
 | 依存ライブラリ | バージョン指定 |
 |---|---|
-| Django | `>=5.2.18,<6.2,!=6.1.0,!=6.1.1` |
+| Django | 5.2.18以上、6.2未満（6.1.0と6.1.1を除く） |
 | Django Ninja | `>=1.7.1,<2` |
 | Pydantic | `>=2.13.5,<3` |
 | python-ulid | `>=4.0.1,<5` |
@@ -110,7 +110,7 @@ class Item(models.Model):
     owner = models.ForeignKey(Owner, null=True, on_delete=models.SET_NULL)
 ```
 
-最小例の`catalog/api.py`を、次の内容に置き換えます。URL設定はそのまま使います。`django_ninja_ulid.orm`はDjangoの初期化後にimportしてください。この例では、URL設定から読み込まれるアプリのAPIモジュールでimportします。
+最小例の`catalog/api.py`を、次の内容に置き換えます。URL設定はそのまま使います。
 
 ```python
 # catalog/api.py
@@ -161,7 +161,7 @@ ownerを設定した場合、`owner`には関連先のULID文字列が入りま�
 
 ### 多対多の関連
 
-ULIDを主キーとする`Tag`モデルを用意した場合は、`Item`に`tags = models.ManyToManyField(Tag)`を追加してマイグレーションを実行し、`ItemOut`の`fields`に`"tags"`を含めます。応答にはULID文字列のリストが入り、関連がなければ`[]`になります。
+`catalog/models.py`の`Item`より前に、`Owner`と同じULID主キーフィールドを持つ`Tag`モデルを定義します。`Item`に`tags = models.ManyToManyField(Tag)`を追加してマイグレーションを実行し、`ItemOut`の`fields`に`"tags"`を含めます。応答にはULID文字列のリストが入り、関連がなければ`[]`になります。
 
 取得処理は`get_object_or_404(Item.objects.prefetch_related("tags"), pk=item_id)`に置き換えます。一覧を返す場合も、QuerySetに`prefetch_related("tags")`を指定すると、Itemごとにタグを取得するクエリを避けられます。Schemaの生成関数は、クエリの最適化を自動では行いません。
 
@@ -171,6 +171,63 @@ ULIDを主キーとする`Tag`モデルを用意した場合は、`Item`に`tags
 | ULIDField・ULIDへの外部キー（`null=True`） | キーは常に含まれる。値はnullになりうる |
 | ULIDの主キーを参照する多対多 | キーは常に含まれる。空のリストはありうるが、nullにはならない |
 | ULID以外のフィールド | Ninjaの通常の扱いに従う |
+
+## リクエストSchema
+
+作成やPATCHのリクエストボディはNinjaの`Schema`で定義します。`catalog/api.py`に`Item`の作成ルートを追加し、応答には`tags`を含む`ItemOut`を使います。
+
+```python
+from django.db import transaction
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+from ninja import Schema, Status
+from pydantic import Field
+
+from django_ninja_ulid import ApiULID
+
+from .models import Item, Owner, Tag
+
+
+class CreateItem(Schema):
+    name: str = Field(max_length=100)
+    owner: ApiULID | None = None
+    tags: list[ApiULID] = Field(default_factory=list)
+
+
+@api.post("/items", response={201: ItemOut})
+@transaction.atomic
+def create_item(request, payload: CreateItem):
+    owner = get_object_or_404(Owner, pk=payload.owner) if payload.owner is not None else None
+    tags = Tag.objects.in_bulk(payload.tags)
+    if any(tag_id not in tags for tag_id in payload.tags):
+        raise Http404("Tag not found")
+    item = Item.objects.create(name=payload.name, owner=owner)
+    item.tags.set(tags.values())
+    return Status(201, item)
+```
+
+次のJSONを`POST /api/items`に送ります。`owner`と`tags`には登録済みの所有者とタグのIDを指定してください。作成した`Item`がHTTP 201で返ります。指定した所有者やタグが存在しない場合はHTTP 404になります。
+
+```json
+{
+  "name": "Desk",
+  "owner": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "tags": ["01ARZ3NDEKTSV4RRFFQ69G5FAW"]
+}
+```
+
+`owner`を省略するか`null`を指定すると、所有者なしで作成します。`tags`を省略すると、タグは空のリストになります。PATCHのビューでは、`"owner" in payload.model_fields_set`で`owner`の省略と明示的な`null`を区別できます。
+
+クエリで複数の`Item`のIDを受け取るには`Query[list[ApiULID]]`を使います。`GET /api/items?ids=01arz3ndektsv4rrffq69g5fax&ids=01arz3ndektsv4rrffq69g5fay`のように、IDごとに`ids`を指定します。
+
+```python
+from ninja import Query
+
+
+@api.get("/items", response=list[ItemOut])
+def list_items(request, ids: Query[list[ApiULID]]):
+    return Item.objects.filter(pk__in=ids).prefetch_related("tags")
+```
 
 ## 手書きのSchemaで使う
 
@@ -195,7 +252,7 @@ class ManualItemOut(ModelSchema):
         fields = ["public_uuid", "name"]
 ```
 
-多対多のフィールドには`related_ids`を使います。Manager・QuerySet・モデルのリストを、主キーのリストに変換します。次の定義を同じモジュールの`ManualItemOut`より前に置き、Djangoの初期化後にAPIモジュールから読み込んでください。
+多対多のフィールドには`related_ids`を使います。Manager・QuerySet・モデルのリストを、主キーのリストに変換します。次の定義を同じモジュールの`ManualItemOut`より前に置きます。
 
 ```python
 # catalog/schemas.py (before ManualItemOut)
@@ -254,6 +311,27 @@ assert isinstance(value, ULID)
 assert adapter.dump_python(value) == "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 ```
 
+## トラブルシューティング
+
+`django_ninja_ulid.orm`をimportすると、NinjaがDjangoの設定を読み込みます。`orm` extraをインストールしていても、Djangoが未設定の状態で`python -c "import django_ninja_ulid.orm"`を実行すると、Ninja 1.7.1ではPydanticの`ValidationError`が発生します。最初のエラーには`ImproperlyConfigured: Requested setting NINJA_PAGINATION_CLASS, but settings are not configured.`と表示されます。
+
+`DJANGO_SETTINGS_MODULE`を指定していても、`django.setup()`の前にアプリのモデルをimportすると、`django.core.exceptions.AppRegistryNotReady: Apps aren't loaded yet.`が発生します。
+
+Djangoプロジェクトでは、URL設定から読み込むAPIモジュールでORMの関数をimportします。単独のスクリプトでは、ORMの関数やモデルをimportする前にDjangoを初期化します。`config.settings`にはプロジェクトの設定モジュールを指定してください。
+
+```python
+import os
+
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+
+from django_ninja_ulid.orm import create_ulid_response_schema
+
+from catalog.models import Item
+```
+
 ## ModelSchemaだけでは扱えない理由
 
 Django Ninja 1.7.1とpython-ulid 4.0.1の組み合わせで、`ModelSchema`と手書きのSchemaの挙動を確認しました。
@@ -268,7 +346,7 @@ Django Ninja 1.7.1とpython-ulid 4.0.1の組み合わせで、`ModelSchema`と�
 
 ## 対応範囲と制限
 
-`create_ulid_response_schema`は、python-ulid-djangoのフィールドから、ネストしない**応答用**のSchemaを生成します。入力用・PATCH用Schemaの自動生成、ネストした応答、ほかのULIDフィールドライブラリには対応していません。
+`create_ulid_response_schema`は、python-ulid-djangoのフィールドから、ネストしない**応答用**のSchemaを生成します。ネストした応答やほかのULIDフィールドライブラリは対象外です。作成やPATCHの入力の定義は[リクエストSchema](#リクエストschema)を参照してください。
 
 空の`fields`、主キー以外を参照する`to_field`付きの外部キー、逆参照、`OneToOneField`、複合主キーは、Schemaの作成時に`ValueError`になります。
 
@@ -295,7 +373,7 @@ CIでは、Python・Django・DBの組み合わせのうち、プルリクエス�
 
 公開APIは`ApiULID`、`create_ulid_response_schema`、`related_ids`の3つです。0.x系の間は、互換性のない変更をマイナー版（例：0.1 → 0.2）で、互換性を保つ修正をパッチ版で公開します。
 
-- [変更履歴](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)
+- [変更履歴（英語・日本語）](https://github.com/nibuno/django-ninja-ulid/blob/main/CHANGELOG.md)
 - [バージョンの方針](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/versioning.md)
 - [開発手順と不具合報告](https://github.com/nibuno/django-ninja-ulid/blob/main/CONTRIBUTING.md)
 - [Issues](https://github.com/nibuno/django-ninja-ulid/issues)
