@@ -59,6 +59,21 @@ gh workflow run publish.yml --ref 'v<version>-publish.1' -f version='<version>' 
 
 ## 過去のリリース記録
 
+### 0.2.0のTestPyPI検証記録
+
+2026-11-23に[Publish run 45114903925](https://github.com/nibuno/django-ninja-ulid/actions/runs/45114903925)が成功した。18通りのCI、配布物の作成、TestPyPIへの送信、取得したwheelのSHA256照合、新規Djangoプロジェクトでの確認を完了している。
+
+| 項目 | 固定した値 |
+|---|---|
+| ソースタグ | `v0.2.0` |
+| ソースcommit | `390de304e0a0cc09bd523973fc8dce0e24cd46de` |
+| 元のrun ID | `45114903925` |
+| artifact ID | `14791585551`（2026-12-23に失効） |
+| manifest | [release-candidates/0.2.0.json](../release-candidates/0.2.0.json) |
+| 公開操作用タグ | `v0.2.0-publish.1` |
+
+[TestPyPIの0.2.0](https://test.pypi.org/project/django-ninja-ulid/0.2.0/)のwheel・sdistのSHA256が候補に一致することを確認した。
+
 ### 0.1.2のTestPyPI検証記録
 
 2026-11-23に[Publish run 45099085870](https://github.com/nibuno/django-ninja-ulid/actions/runs/45099085870)が成功した。18通りのCI、配布物の作成、TestPyPIへの送信、取得したwheelのSHA256照合、新規Djangoプロジェクトでの確認を完了している。
