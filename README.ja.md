@@ -260,7 +260,7 @@ OpenAPIには次の制限があります。
 |---|---|---|
 | 3.12 / 3.13 / 3.14 | 5.2.18 / 6.1.2 | SQLite / PostgreSQL 18.6 |
 
-CIでは12通りすべてを検証します。Djangoの依存指定は5.2系・6.1系の後続パッチ版も許可しますが、インストール可能な版すべてを検証したわけではありません。詳しくは[対応環境と検証方法](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)を参照してください。
+CIでは、プルリクエストで代表的な4通りを検証し、`main`へのpush、手動実行、リリース時には全12通りを検証します。Djangoの依存指定は5.2系・6.1系の後続パッチ版も許可しますが、インストール可能な版すべてを検証したわけではありません。詳しくは[対応環境と検証方法](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md)を参照してください。
 
 ## バージョンの方針と開発への参加
 

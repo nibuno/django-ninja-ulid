@@ -260,7 +260,7 @@ Two known OpenAPI limitations:
 |---|---|---|
 | 3.12 / 3.13 / 3.14 | 5.2.18 / 6.1.2 | SQLite / PostgreSQL 18.6 |
 
-CI covers all 12 combinations. The Django dependency range also permits later patch versions within 5.2 and 6.1; those are not automatically covered by this tested-version table. See [compatibility and verification details (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md).
+CI covers four representative combinations on pull requests and all 12 on pushes to `main`, manual runs, and releases. The Django dependency range also permits later patch versions within 5.2 and 6.1; those are not automatically covered by this tested-version table. See [compatibility and verification details (Japanese)](https://github.com/nibuno/django-ninja-ulid/blob/main/docs/compatibility.md).
 
 ## Versioning and contributing
 

@@ -1,12 +1,12 @@
 # 対応環境と検証方法
 
-更新日：2026-10-18。
+更新日：2026-11-23。
 
 ## 結論
 
 Python 3.12〜3.14、Django 5.2.18／6.1.2、SQLite／PostgreSQL 18.6の12通りで、型・モデル連携などの82件のテストと新規Djangoプロジェクトの確認が成功した。現時点の対応宣言は、この組み合わせに限る。
 
-`0.1.0`の準備でリリース検査の9件を追加し、現在のCIは各91件を実行する。ライブラリ本体のソースと依存の版は変更していない。以下の実測表とJSONは、切り出し直後の`0.0.0`を検証した記録として保持する。
+`0.1.0`の準備でリリース検査を9件追加した。ライブラリ本体のソースと依存の版は変更していない。以下の実測表とJSONは、切り出し直後の`0.0.0`を検証した記録として保持する。
 
 Ninja 1.7.1、Pydantic 2.13.5、python-ulid 4.0.1、python-ulid-django 1.6.0を固定して検証している。未検証の版まで互換性を保証する結果ではない。基本依存を固定しているため、これらについて最小依存と最新依存は同じ版になる。
 
@@ -25,7 +25,7 @@ Ninja 1.7.1、Pydantic 2.13.5、python-ulid 4.0.1、python-ulid-django 1.6.0を�
 
 PostgreSQLのイメージは`postgres:18.6-trixie`、ドライバーはpsycopg 3.3.6。SQLiteは各Pythonに付属する実測版であり、SQLiteの全バージョンを検証したわけではない。PostgreSQLの他のメジャー版も対応宣言には含めない。PostgreSQL 18は、[公式のサポート対象](https://www.postgresql.org/support/versioning/)から選んだ。
 
-ローカルの実測版・件数・配布物とソースのハッシュは[検証記録](verification-2026-10-18.json)に保存した。対応範囲・文書を更新する前のwheelで確認しており、ライブラリ本体のソースは同じである。CIは各コミットから配布物を作り直して検証する。
+ローカルの実測版・件数・配布物とソースのハッシュは[検証記録](verification-2026-10-18.json)に保存した。対応範囲・文書を更新する前のwheelで確認しており、ライブラリ本体のソースは同じである。CIでは検証対象のコミットから配布物を作り直す。
 
 全12通りで、新しいDjangoプロジェクトの作成、migration、ULIDのPK・FK・M2Mの保存と復元、通常のUUID、HTTPの作成・取得、nullと空の関連、不正入力422、OpenAPIを確認した。aliasの異なる応答には別名のSchemaを使う。
 
@@ -39,14 +39,16 @@ Ninja・Pydantic・ULIDライブラリの許容範囲を広げる場合は、追
 
 ## CI
 
-[GitHub ActionsのCI](https://github.com/nibuno/django-ninja-ulid/actions/workflows/ci.yml)は、[ci-matrix.json](../ci-matrix.json)から組み合わせを読み、次を実行する。
+[GitHub ActionsのCI](https://github.com/nibuno/django-ninja-ulid/actions/workflows/ci.yml)は、[ci-matrix.json](../ci-matrix.json)から検証対象の組み合わせを読み込む。プルリクエストでは、対応するPythonとDjangoの最古版同士と最新版同士を、それぞれSQLiteとPostgreSQLで検証する（計4通り）。`main`へのpush、手動実行、リリースタグのpushでは全12通りを検証する。
+
+各組み合わせで次の手順を実行する。
 
 1. 固定した開発依存を導入し、sdistからwheelを作成して`twine check`を通す。
 2. editableなパッケージをwheelへ入れ替え、対象のDjango版を選ぶ。
-3. 各DBで91件のテスト（既存82件とリリース検査9件）と、新規Djangoプロジェクトの確認を実行する。
+3. 対象のDBでpytestを実行し、新規Djangoプロジェクトの動作を確認する。
 4. SQLiteの各ジョブでは、別の環境へextraなしで入れ、型だけの利用を確認する。
 
-Pythonは指定した各マイナー版の、runnerで取得できるパッチ版を使う。PostgreSQLは18.6、ドライバーはロックした3.3.6を使う。ジョブごとの結果・実測版は、7日間保存する成果物のXMLとJSONから確認できる。CIの実行状況は上記のリンクで確認する。
+Pythonは指定した各マイナー版の、runnerで取得できるパッチ版を使う。PostgreSQLのジョブでのみ18.6のサービスコンテナを起動し、ドライバーはロックした3.3.6を使う。ジョブごとの結果・実測版は、7日間保存する成果物のXMLとJSONから確認できる。CIの実行状況は上記のリンクで確認する。
 
 Actionは公式リポジトリのコミットに固定し、権限は`contents: read`とする。CIに公開処理は含めない。[uvのGitHub Actions向け手順](https://docs.astral.sh/uv/guides/integration/github/)、[GitHubのPostgreSQLサービスの説明](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers)を基に構成した。
 
